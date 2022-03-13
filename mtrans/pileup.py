@@ -1,49 +1,149 @@
 import os
-import gzip
-import numpy as np
-from collections import defaultdict
-from tqdm import tqdm
-from mtrans.dirichlet_multinomial import find_dirichlet_priors
+import subprocess
+import tempfile
+import argparse
+from .__init__ import __version__
 
-MAX_LEN = 1000000
-
-
-def pileup_dist(pileups,
-                max_dist=9999999999999,
+def align_and_pileup(reference,
+                outdir,
+                prefix,
+                r1, 
+                r2=None,
+                aligner='minimap2',
+                minimap_preset='sr',
+                minimap_params=None,
+                n_cpu=1,
                 quiet=False):
 
     # load pileups generated using the bampileup function
     if not quiet:
-        print('Loading pileups...')
+        print('Generating alignment and pileup...')
 
-    sample_arrays = []
-    sample_names = []
-    for i, f in tqdm(enumerate(pileups)):
-        with gzip.open(f, 'rt') as infile:
-            for line in infile:
-                if line.strip()=='': continue
-                line = line.strip().split(',')
-                sample_names.append(line[0])
-                a = np.array(line[1:]).astype(float)
-                a = np.reshape(a, (int(a.size/4),4), order='C')
-                sample_arrays.append(a)
+    # run aligner
+    temp_file = tempfile.NamedTemporaryFile(delete=False, dir=outdir)
+    temp_file.close()
+
+    if aligner=='minimap2':
+        cmd = "minimap2" 
+        cmd += " -t " + str(n_cpu)
+
+    if minimap_params is not None:
+        cmd += ' ' + minimap_params
+    else:
+        cmd += ' -ax ' + minimap_preset
     
-    n_samples = len(sample_names)
-    ref_length = sample_arrays[0].shape[0]
+    cmd += " " + reference
+    cmd += " " + r1
+    
+    if r2 is not None:
+        cmd += ' ' + r2
+    
+    cmd += ' | htsbox samview -S -b - | htsbox samsort - > ' + temp_file.name
 
-    # calculate pairwise distances
     if not quiet:
-        print('calculating distances...')
+        print("running cmd: " + cmd)
 
-    distances = []
-    for i in tqdm(range(n_samples)):
-        for j in range(i + 1, n_samples):
-            d = ref_length - np.count_nonzero(np.sum(sample_arrays[i] * sample_arrays[j], 1))
-            if d <= max_dist:
-                distances.append((i, j, int(d)))
+    subprocess.run(cmd, shell=True, check=True)
 
-    sample_to_index = {}
-    for i, s in enumerate(sample_names):
-        sample_to_index[s] = i
 
-    return (sample_names, sample_to_index, distances)
+    # run pileup
+    cmd = "htsbox pileup -C "
+    cmd += temp_file.name
+    cmd += ' > ' + outdir + prefix + '_pileup.txt'
+
+    if not quiet:
+        print("running cmd: " + cmd)
+
+    subprocess.run(cmd, shell=True, check=True)
+
+    # clean up
+    os.remove(temp_file.name)
+
+    return 
+
+
+def main():
+
+    parser = argparse.ArgumentParser(description='Generates pileup using minimap2 & htsbox',
+                                     prog='pileup')
+
+    parser.add_argument("--r1",
+                        dest="r1",
+                        required=True,
+                        help="fasta/q file 1",
+                        type=os.path.abspath)
+    
+    parser.add_argument("--r2",
+                        dest="r2",
+                        help="fasta/q file 2 (optional)",
+                        type=os.path.abspath,
+                        default=None)
+    
+    parser.add_argument("--reference",
+                        dest="reference",
+                        required=True,
+                        help="reference file in fasta format",
+                        type=os.path.abspath)
+
+    parser.add_argument("-o",
+                         "--out_dir",
+                         dest="output_dir",
+                         required=True,
+                         help="location of an output directory",
+                         type=os.path.abspath)
+    
+    parser.add_argument("--prefix",
+                         dest="prefix",
+                         help="prefix to use",
+                         default='test',
+                         type=str)
+    
+    parser.add_argument("--minimap_preset",
+                         dest="minimap_preset",
+                         help="minimap preset to use - one of 'sr' (default), 'map-ont' or 'map-pb'",
+                         default='sr',
+                         type=str)
+
+    parser.add_argument("-t",
+                        "--threads",
+                        dest="n_cpu",
+                        help="number of threads to use (default=1)",
+                        type=int,
+                        default=1)
+
+    parser.add_argument("--quiet",
+                        dest="quiet",
+                        help="turns off some console output",
+                        action='store_true',
+                        default=False)
+
+    parser.add_argument('--version',
+                        action='version',
+                        version='%(prog)s ' + __version__)
+
+    args = parser.parse_args()
+
+    # create directory if it isn't present already
+    if not os.path.exists(args.output_dir):
+        os.mkdir(args.output_dir)
+    # make sure trailing forward slash is present
+    args.output_dir = os.path.join(args.output_dir, "")
+    
+
+    align_and_pileup(
+                reference=args.reference,
+                outdir=args.output_dir,
+                prefix=args.prefix,
+                r1=args.r1, 
+                r2=args.r2,
+                aligner='minimap2',
+                minimap_preset=args.minimap_preset,
+                minimap_params=None,
+                n_cpu=args.n_cpu,
+                quiet=args.quiet)
+
+    return
+
+
+if __name__ == '__main__':
+    main()
