@@ -1,9 +1,5 @@
-from cgi import print_form
 import os
 import sys
-import argparse
-import time
-from .__init__ import __version__
 
 # import sourmash stuff
 import screed
@@ -17,22 +13,13 @@ from sourmash.command_sketch import _signatures_for_sketch_factory
 from sourmash.signature import SourmashSignature
 
 
-def gather(
-    input_files,
-    databasefile,
-    outdir,
-    prefix,
-    ksize=51,
-    threshold_bp=50000,
-    min_match=0.5,
-    prefetch=True,
-    max_hits=99999,
-    cache_size=0,
-):
+def sketch_files(input_files, prefix, outputfile, sourmash_params):
+    print(prefix)
+    print(outputfile)
 
     # create hash from reads
     signatures_factory = _signatures_for_sketch_factory(
-        ["k=51,scaled=1000,noabund"], "dna", False
+        [sourmash_params], "dna", False
     )
     sigs = signatures_factory()
 
@@ -46,7 +33,7 @@ def gather(
             if n % 10000 == 0 and n:
                 print(f"\r... {filename} {n}")
             add_seq(sigs, record.sequence, False, False)
-            # if n % 20000 == 0 and n: break
+            if n % 20000 == 0 and n: break
 
         if n is not None:
             print(f"... {filename} {n + 1} sequences")
@@ -60,10 +47,36 @@ def gather(
     )
 
     # save and load hash. This could do with improving
-    save_siglist(sigs, outdir + prefix + ".sig")
+    save_siglist(sigs, outputfile)
+
+    return
+
+
+
+def gather(
+    input_files,
+    databasefile,
+    output,
+    temp_dir,
+    ksize=51,
+    threshold_bp=50000,
+    min_match=0.5,
+    prefetch=True,
+    max_hits=99999,
+    cache_size=0,
+):
+
+    # create hash from reads
+    sketch_files(
+        input_files=input_files,
+        prefix="query",
+        outputfile=temp_dir + "query.sig",
+        sourmash_params="k=51,scaled=1000,noabund",
+    )
+
     # load the query signature & figure out all the things
     query = sourmash_args.load_query_signature(
-        outdir + prefix + ".sig", ksize=ksize, select_moltype="DNA", select_md5=None
+        temp_dir + "query.sig", ksize=ksize, select_moltype="DNA", select_md5=None
     )
 
     # check query is not empty
@@ -150,7 +163,8 @@ def gather(
             f"WARNING: final scaled was {gather_iter.scaled}, vs query scaled of {query.minhash.scaled}"
         )
 
-    with open(outdir + "sourmash_hits.csv", "w") as outfile:
+    references = []
+    with open(output + ".csv", "w") as outfile:
         outfile.write("query,reference,f_unique_to_query,f_match_orig\n")
         for result in found:
             outfile.write(
@@ -164,94 +178,6 @@ def gather(
                 )
                 + "\n"
             )
+            references.append(result.name)
 
-    return
-
-
-def main():
-
-    parser = argparse.ArgumentParser(
-        description="Uses sourmash to identify reference genomes within a read set",
-        prog="gather",
-    )
-
-    parser.add_argument(
-        "-i",
-        "--input",
-        dest="input_files",
-        required=True,
-        help="path to query signature",
-        type=os.path.abspath,
-        nargs="+",
-    )
-
-    parser.add_argument(
-        "--database",
-        dest="database",
-        help="path to database signatures",
-        type=os.path.abspath,
-        default=None,
-    )
-
-    parser.add_argument(
-        "-o",
-        "--out_dir",
-        dest="output_dir",
-        required=True,
-        help="location of an output directory",
-        type=os.path.abspath,
-    )
-
-    parser.add_argument(
-        "-p",
-        "--prefix",
-        dest="prefix",
-        default=None,
-        help="prefix to describe the input sample read files",
-        type=str,
-    )
-
-    parser.add_argument(
-        "-t",
-        "--threads",
-        dest="n_cpu",
-        help="number of threads to use (default=1)",
-        type=int,
-        default=1,
-    )
-
-    parser.add_argument(
-        "--quiet",
-        dest="quiet",
-        help="turns off some console output",
-        action="store_true",
-        default=False,
-    )
-
-    parser.add_argument(
-        "--version", action="version", version="%(prog)s " + __version__
-    )
-
-    args = parser.parse_args()
-
-    # create directory if it isn't present already
-    if not os.path.exists(args.output_dir):
-        os.mkdir(args.output_dir)
-    # make sure trailing forward slash is present
-    args.output_dir = os.path.join(args.output_dir, "")
-
-    if args.prefix is None:
-        args.prefix = os.path.basename(args.input_files[0]).split(".")[0]
-
-    gather(
-        input_files=args.input_files,
-        databasefile=args.database,
-        outdir=args.output_dir,
-        prefix=args.prefix,
-    )
-
-    return
-
-
-if __name__ == "__main__":
-    main()
+    return (references)

@@ -49,7 +49,7 @@ def align_and_pileup(reference,
     # run pileup
     cmd = "htsbox pileup -C "
     cmd += temp_file.name
-    cmd += ' > ' + outdir + prefix + '_pileup.txt'
+    cmd += ' > ' + prefix + '_pileup.txt'
 
     if not quiet:
         print("running cmd: " + cmd)
