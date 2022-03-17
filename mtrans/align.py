@@ -90,7 +90,7 @@ def main():
     # Create temporary directory
     temp_dir = os.path.join(tempfile.mkdtemp(dir=args.output_dir), "")
 
-    # retrieve sourmash database from tarball
+    # retrieve sourmash database from zipfile
     with ZipFile(args.database, 'r') as archive:
         archive.extract("sourmashDB.sbt.zip", temp_dir)
 
@@ -98,7 +98,7 @@ def main():
     references = gather(
         input_files=args.input_files,
         databasefile=temp_dir + "sourmashDB.sbt.zip",
-        output=args.output_dir + "soursmash_hits.csv",
+        output=args.output_dir + "sourmash_hits",
         temp_dir=temp_dir
     )
 
@@ -116,7 +116,7 @@ def main():
             archive.extract(ref + '.fasta.gz', temp_dir)
             align_and_pileup(temp_dir + ref + '.fasta.gz',
                 temp_dir,
-                args.output_dir + "ref",
+                args.output_dir + "ref_" + str(ref),
                 r1, 
                 r2=r2,
                 aligner='minimap2',
