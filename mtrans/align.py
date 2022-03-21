@@ -6,10 +6,13 @@ import shutil
 import gzip
 from zipfile import ZipFile
 import tempfile
+import numpy as np
 
 from .__init__ import __version__
 from .utils import sketch_files, gather
 from .pileup import align_and_pileup
+from .dirichlet_multinomial import find_dirichlet_priors, calculate_posteriors
+
 
 
 
@@ -62,6 +65,28 @@ def main():
                          default='sr',
                          type=str)
 
+    parser.add_argument("--threshold",
+                          dest="expected_freq_threshold",
+                          default=None,
+                          help=("Minimum posterior read frequency threshold." +
+                                " The default is set that a variant at a " +
+                                "location is discounted if it is not found " +
+                                "with a coverage of ~100x"),
+                          type=float)
+
+    parser.add_argument("--both-strands",
+        dest="require_both_strands",
+        help="turns on the requirement that a variant is supported by both strands",
+        action='store_true',
+        default=False
+    )
+
+    parser.add_argument("--filter-all",
+                          dest="keep_all",
+                          help="turns on filtering of variants with support below the posterior frequency threshold",
+                          action='store_false',
+                          default=True)
+
     parser.add_argument("-t",
                         "--threads",
                         dest="n_cpu",
@@ -80,6 +105,25 @@ def main():
                         version='%(prog)s ' + __version__)
 
     args = parser.parse_args()
+
+    alleles = np.array(['A','C','G','T'])
+    iupac_codes = {
+    'A':'A',
+    'C':'C',
+    'G':'G',
+    'T':'T',
+    'AC':'M',
+    'AG':'R',
+    'AT':'W',
+    'CG':'S',
+    'CT':'Y',
+    'GT':'K',
+    'CGT':'B',
+    'AGT':'D',
+    'ACT':'H',
+    'ACG':'V',
+    'ACGT':'N',
+    }
 
     # get working directory and create temp directory
     # create directory if it isn't present already
@@ -124,6 +168,54 @@ def main():
                 minimap_params=None,
                 n_cpu=args.n_cpu,
                 quiet=args.quiet)
+    
+    # add empirical Bayes pseudocounts
+    npos = {'A':0, 'C':1, 'G':2, 'T':3}
+    for ref in references:
+        all_counts = []
+        with open(args.output_dir + "ref_" + str(ref) + '_pileup.txt', 'r')  as infile:
+            for i, line in enumerate(infile):
+                line = line.strip().split()
+                nucs = line[-2].split(',')
+                ncounts = line[-1].split(':')[1:3]
+                counts = np.zeros(4, dtype=float)
+                for nuc, c1, c2 in zip(nucs, 
+                                       ncounts[0].split(','), 
+                                       ncounts[1].split(',')):
+                    if nuc not in npos: continue
+                    if args.require_both_strands:
+                        if (c1==0) or (c2==0):
+                            c1=c2=0
+                    counts[npos[nuc]] = c1 + c2
+                all_counts.append(counts)
+        all_counts = np.asarray(all_counts)
+        alphas = find_dirichlet_priors(all_counts)
+        a0 = np.sum(alphas)
+
+        if args.expected_freq_threshold is None:
+            args.expected_freq_threshold = alphas[1]/(np.sum(alphas) + 50)
+        
+        if not args.quiet:
+                print('Using frequency threshold:', args.expected_freq_threshold)
+                print('Calculating expected frequency estimates...')
+
+        calculate_posteriors(all_counts, alphas, args.keep_all, args.expected_freq_threshold)
+
+        # Filter out those below the threshold
+        all_counts[all_counts < args.expected_freq_threshold] = 0
+
+        # save allele counts to file
+        if not args.quiet:
+            print("saving to file...")
+        with gzip.open(args.output_dir + "posterior_counts_ref_" + str(ref) + '.csv.gz', 'wb') as outfile:
+            np.savetxt(outfile, all_counts.reshape((1, all_counts.size)), delimiter=',', newline='\n', fmt='%0.5f')
+            outfile.write(b"\n")
+
+        # generate fasta output
+        with open(args.output_dir + "posterior_counts_ref_" + str(ref) + '.fasta', 'w') as outfile:
+            outfile.write('>'+str(ref)+'\n')
+            for i in range(all_counts.shape[0]):
+                outfile.write(iupac_codes[''.join(alleles[all_counts[i,:]>0])])
 
 
     shutil.rmtree(temp_dir)
