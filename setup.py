@@ -52,10 +52,10 @@ elif openmp:
     extra_link_args.insert(-1, "-fopenmp")
 
 ext_modules = [
-    Pybind11Extension("MTRANS",
+    Pybind11Extension("MTRAN",
         ["src/python_bindings.cpp"],
         # Example: passing in the version to the compiled code
-        define_macros = [('VERSION_INFO', find_version("mtrans/__init__.py"))],
+        define_macros = [('VERSION_INFO', find_version("mtran/__init__.py"))],
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args),
 ]
@@ -63,18 +63,18 @@ ext_modules = [
 
 
 setup(
-    name="mtrans",
-    version=find_version("mtrans/__init__.py"),
+    name="mtran",
+    version=find_version("mtran/__init__.py"),
     author="Gerry Tonkin-Hill",
     description=
     "A fast python and and c++ pipeline for clustering sequences using the 'transcluster' method",
     long_description_content_type="text/markdown",
-    url="https://github.com/gtonkinhill/mtrans",
+    url="https://github.com/gtonkinhill/mtran",
     install_requires=[
         'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'numba', 'tqdm'
     ],
     python_requires='>=3.6.0',
-    packages=['mtrans'],
+    packages=['mtran'],
     keywords='transmission clustering metagenomics',
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -86,8 +86,8 @@ setup(
     ],
     entry_points={
         'console_scripts':
-        ['mtrans = mtrans.__main__:main',
-        ['bampileup = mtrans.bampileup:main']],
+        ['mtran = mtran.__main__:main',
+        ['bampileup = mtran.bampileup:main']],
     },
     ext_modules=ext_modules,
     extras_require={"test": "pytest"},

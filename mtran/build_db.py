@@ -52,7 +52,7 @@ def build_db(inputs, outputdir, ksize=51, scale=1000, n_cpu=1, quiet=False):
 def main():
 
     parser = argparse.ArgumentParser(
-        description="Builds a database for Mtrans",
+        description="Builds a database for mtran",
         prog="buildb",
     )
 

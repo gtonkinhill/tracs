@@ -7,7 +7,6 @@
 #include <zlib.h>
 
 #include "kseq.h"
-#include "progress.hpp"
 
 #include <boost/dynamic_bitset.hpp>
 

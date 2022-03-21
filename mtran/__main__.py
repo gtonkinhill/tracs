@@ -20,7 +20,7 @@ SECONDS_IN_YEAR = 31556952
 def get_options():
     description = 'Runs the pairsnp and transcluster algorithms.'
     parser = argparse.ArgumentParser(description=description,
-                                     prog='mtrans')
+                                     prog='mtran')
 
     io_opts = parser.add_argument_group('Input/output')
     io_opts.add_argument(

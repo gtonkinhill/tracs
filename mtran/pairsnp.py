@@ -1,5 +1,5 @@
 import os
-from MTRANS import pairsnp
+from mtran import pairsnp
 
 
 def run_pairsnp(msa, snp_threshold, outputfile, ncpu=1):
