@@ -166,6 +166,10 @@ def main():
     # Create temporary directory
     temp_dir = os.path.join(tempfile.mkdtemp(dir=args.output_dir), "")
 
+    # set prefix to file name if not provided
+    if args.prefix is None:
+        args.prefix = os.path.splitext(os.bath.basename(args.input_files[0]))[0]
+
     # retrieve sourmash database from zipfile
     with ZipFile(args.database, 'r') as archive:
         archive.extract("sourmashDB.sbt.zip", temp_dir)
@@ -174,7 +178,7 @@ def main():
     references = gather(
         input_files=args.input_files,
         databasefile=temp_dir + "sourmashDB.sbt.zip",
-        output=args.output_dir + "sourmash_hits",
+        output=args.output_dir + args.prefix + "_sourmash_hits",
         temp_dir=temp_dir
     )
 
@@ -192,7 +196,7 @@ def main():
             archive.extract(ref + '.fasta.gz', temp_dir)
             align_and_pileup(temp_dir + ref + '.fasta.gz',
                 temp_dir,
-                args.output_dir + "ref_" + str(ref),
+                args.output_dir + args.prefix + "_ref_" + str(ref),
                 r1, 
                 r2=r2,
                 aligner='minimap2',
@@ -205,7 +209,7 @@ def main():
     npos = {'A':0, 'C':1, 'G':2, 'T':3}
     for ref in references:
         all_counts = []
-        with open(args.output_dir + "ref_" + str(ref) + '_pileup.txt', 'r')  as infile:
+        with open(args.output_dir + args.prefix + "_ref_" + str(ref) + '_pileup.txt', 'r')  as infile:
             for i, line in enumerate(infile):
                 line = line.strip().split()
                 nucs = line[-2].split(',')
@@ -239,13 +243,13 @@ def main():
         # save allele counts to file
         if not args.quiet:
             print("saving to file...")
-        with gzip.open(args.output_dir + "posterior_counts_ref_" + str(ref) + '.csv.gz', 'wb') as outfile:
+        with gzip.open(args.output_dir + args.prefix + "_posterior_counts_ref_" + str(ref) + '.csv.gz', 'wb') as outfile:
             np.savetxt(outfile, all_counts.reshape((1, all_counts.size)), delimiter=',', newline='\n', fmt='%0.5f')
             outfile.write(b"\n")
 
         # generate fasta output
-        with open(args.output_dir + "posterior_counts_ref_" + str(ref) + '.fasta', 'w') as outfile:
-            outfile.write('>'+str(ref)+'\n')
+        with open(args.output_dir + args.prefix + "_posterior_counts_ref_" + str(ref) + '.fasta', 'w') as outfile:
+            outfile.write('>' + args.prefix + "_" + str(ref) +'\n')
             for i in range(all_counts.shape[0]):
                 outfile.write(iupac_codes[''.join(alleles[all_counts[i,:]>0])])
 

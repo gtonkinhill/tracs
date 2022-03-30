@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <string>
 #include <zlib.h>
-
 #include "kseq.h"
 
 #include <boost/dynamic_bitset.hpp>

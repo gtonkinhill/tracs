@@ -1,8 +1,50 @@
 import os
-from mtran import pairsnp
+from MTRAN import pairsnp
 
 
-def run_pairsnp(msa, snp_threshold, outputfile, ncpu=1):
-    # runs pairsnp and reads result into a numpy array
-    
-    return None
+def run_pairsnp(msaFile, kNN=None, threshold=None, threads=1):
+    """Runs pairsnp with the option of supplying a distance or kNN cutoff
+
+    Args:
+        msaFile (str)
+            Multiple sequence alignment
+        kNN (int)
+            Number of nearest neighbours to return for each sample
+        threshold (float)
+            Proportion of alignment allowed to differ. Converted to a SNP distance threshold (optional)
+        threads (int)
+            Number of threads to use when running pairsnp (default=1)
+
+    Returns:
+        I (np.array)
+            integer array of row indices
+        J (np.array)
+            integer array of column indices
+        dist (np.array)
+            array of SNP distances
+        names (list)
+            list of sample names taken from the fasta headers
+    """
+
+    # run some checks on the parameters
+    if not os.path.isfile(msaFile):
+        raise ValueError("MSA file does not exist!")
+
+    # determine the max snp distance and alignment length
+    with open(msaFile, "r") as infile:
+        name, seq = next(read_fasta(infile))
+        seq_len = len(seq)
+
+    if threshold > 0:
+        dist = int(threshold * seq_len) + 1
+    else:
+        dist = -1
+
+    # run pairsnp
+    I, J, dist, names = pairsnp(fasta=msaFile,
+                                n_threads=threads,
+                                dist=dist,
+                                knn=kNN)
+    dist = [float(x) / seq_len for x in dist]
+
+    return (I, J, dist, names)

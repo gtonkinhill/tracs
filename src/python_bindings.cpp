@@ -1,7 +1,6 @@
+#include <pybind11/stl.h>
 #include "pairsnp.hpp"
 
-
-#include <pybind11/stl.h>
 namespace py = pybind11;
 
 PYBIND11_MODULE(MTRAN, m) {
