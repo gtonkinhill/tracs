@@ -2,6 +2,7 @@ from setuptools import setup, find_packages
 import platform
 from glob import glob
 from pybind11.setup_helpers import Pybind11Extension, build_ext
+from ctypes.util import find_library
 from codecs import open
 from os import path
 import os
