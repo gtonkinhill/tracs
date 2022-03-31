@@ -66,7 +66,47 @@ Posterior count estimates:
 
 ## Pairwise Transmission Distance
 
-Coming soon...
+usage: dist [-h] --msa MSA_FILES [MSA_FILES ...] --dates METADATA -o
+            OUTPUT_FILE [-D SNP_THRESHOLD] [--clock_rate CLOCK_RATE]
+            [--trans_rate TRANS_RATE] [-K TRANS_THRESHOLD] [-t N_CPU]
+            [--quiet] [--version]
+
+Estimates pairwise SNP and transmission distances between each pair of samples
+aligned to the same reference genome.
+
+options:
+  -h, --help            show this help message and exit
+  -t N_CPU, --threads N_CPU
+                        number of threads to use (default=1)
+  --quiet               turns off some console output
+  --version             show program's version number and exit
+
+Input/output:
+  --msa MSA_FILES [MSA_FILES ...]
+                        Input fasta files formatted by the align and merge
+                        functions
+  --dates METADATA      Location of metadata in csv format. The first column
+                        must include the sequence names and the second column
+                        must include sampling dates.
+  -o OUTPUT_FILE, --output OUTPUT_FILE
+                        name of the output file to store the pairwise distance
+                        estimates.
+
+SNP distance options:
+  -D SNP_THRESHOLD, --snp_threshold SNP_THRESHOLD
+                        Only output those transmission pairs with a SNP
+                        distance <= D
+
+Transmission distance options:
+  --clock_rate CLOCK_RATE
+                        clock rate as defined in the transcluster paper
+                        (SNPs/genome/year) default=1e-3 * 29903
+  --trans_rate TRANS_RATE
+                        transmission rate as defined in the transcluster paper
+                        (transmissions/year) default=73
+  -K TRANS_THRESHOLD, --trans_threshold TRANS_THRESHOLD
+                        Only outputs those pairs where the most likely number
+                        of intermediate hosts <= K
 
 ## Clustering
 
