@@ -144,7 +144,7 @@ def main():
             transmission_dists, datediff = calculate_trans_prob(
                 snp_dists[:3],
                 sample_dates=dates,
-                K=10,
+                K=0,
                 lamb=args.clock_rate,
                 beta=args.trans_rate,
                 samplenames=snp_dists[3],
@@ -157,7 +157,7 @@ def main():
             ):
                 outfile.write(
                     ",".join(
-                        [names[i], names[j], str(dateD), str(int(snpD)), str(tranD)]
+                        [names[i], names[j], str(dateD), str(int(snpD)), str(np.exp(tranD))]
                     )
                     + "\n"
                 )
