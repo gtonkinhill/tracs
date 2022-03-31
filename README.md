@@ -66,6 +66,7 @@ Posterior count estimates:
 
 ## Pairwise Transmission Distance
 
+```
 usage: dist [-h] --msa MSA_FILES [MSA_FILES ...] --dates METADATA -o
             OUTPUT_FILE [-D SNP_THRESHOLD] [--clock_rate CLOCK_RATE]
             [--trans_rate TRANS_RATE] [-K TRANS_THRESHOLD] [-t N_CPU]
@@ -107,6 +108,7 @@ Transmission distance options:
   -K TRANS_THRESHOLD, --trans_threshold TRANS_THRESHOLD
                         Only outputs those pairs where the most likely number
                         of intermediate hosts <= K
+```
 
 ## Clustering
 
