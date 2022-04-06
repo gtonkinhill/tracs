@@ -127,7 +127,7 @@ def main():
             dates[line[0]] = (line[1], date.fromisoformat(line[1]))
 
     with open(args.output_file, "w") as outfile:
-        outfile.write("sampleA,sampleB,date difference,SNP distance,transmission distance\n")
+        outfile.write("sampleA,sampleB,date difference,SNP distance,transmission distance,expected K\n")
         for msa in args.msa_files:
             # Estimate SNP distances
             # I, J, dist, names
@@ -141,7 +141,7 @@ def main():
 
             # Estimate transmission distances
             print(len(snp_dists[:3]))
-            transmission_dists, datediff = calculate_trans_prob(
+            transmission_dists, expectedk, datediff = calculate_trans_prob(
                 snp_dists[:3],
                 sample_dates=dates,
                 K=0,
@@ -152,12 +152,12 @@ def main():
             )
 
             # Write output
-            for i, j, snpD, tranD, dateD in zip(
-                snp_dists[0], snp_dists[1], snp_dists[2], transmission_dists, datediff
+            for i, j, dateD, snpD, expK, tranD  in zip(
+                snp_dists[0], snp_dists[1], datediff, snp_dists[2], expectedk, transmission_dists
             ):
                 outfile.write(
                     ",".join(
-                        [names[i], names[j], str(dateD), str(int(snpD)), str(np.exp(tranD))]
+                        [names[i], names[j], str(dateD), str(int(snpD)), str(np.exp(tranD)), str(expK)]
                     )
                     + "\n"
                 )

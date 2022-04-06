@@ -17,6 +17,17 @@ def memoize(f):
 
     return helper
 
+def memoize2(f):
+    memo = {}
+
+    def helper(N, delta, lamb, beta, max_k, lgamma):
+        x = (N, delta, lamb, beta)
+        if x not in memo:
+            memo[x] = f(N, delta, lamb, beta, max_k, lgamma)
+        return memo[x]
+
+    return helper
+
 
 def calculate_trans_prob(
     sparse_snp_dist, sample_dates, K, lamb, beta, samplenames=None, log=False
@@ -24,10 +35,11 @@ def calculate_trans_prob(
     npairs = len(sparse_snp_dist[0])
 
     # precalculate lgamma
-    max_nk = max([t[2] for t in sparse_snp_dist]) + K
+    max_nk = 1e5 #max([t[2] for t in sparse_snp_dist]) + K
     lgamma = gammaln(np.arange(max_nk + 2))
 
     lprob = np.zeros(npairs, dtype=float)
+    expectedk = np.zeros(npairs, dtype=float)
     datediff = np.zeros(npairs, dtype=float)
     for c, i, j, d in zip(range(npairs), sparse_snp_dist[0], sparse_snp_dist[1], sparse_snp_dist[2]):
         delta = np.abs(
@@ -36,35 +48,27 @@ def calculate_trans_prob(
             ).total_seconds()
             / SECONDS_IN_YEAR
         )
-        lp = lprob_transmission(int(d), K, delta, lamb, beta, lgamma)
-        lprob[c] = lp
+        lprob[c] = lprob_k_given_N(int(d), 0, delta, lamb, beta, lgamma)
+        expectedk[c] = expected_k(int(d), delta, lamb, beta, 100, lgamma)
         datediff[c] = delta
-        # if lp >= lthreshold:
-        #     row_ind.append(i)
-        #     col_ind.append(j)
-        #     lprob.append(lp)
-        #     # write out log probabilities if requested.
-        #     if outputfile is not None:
-        #         outfile.write(",".join([samplenames[i], samplenames[j],
-        #                       str(d), str(int(np.ceil(delta*365)))]))
-        #         for k in range(K + 1):
-        #             lkgN = lprob_k_given_N(d, k, delta, lamb, beta, lgamma)
-        #             if not log:
-        #                 lkgN = np.exp(lkgN)
-        #             outfile.write(
-        #                 "," +
-        #                 str(lkgN))
-        #         outfile.write("\n")
 
-    return lprob, datediff
+    return lprob, expectedk, datediff
 
 
-@memoize
-def lprob_transmission(N, K, delta, lamb, beta, lgamma):
+@memoize2
+def expected_k(N, delta, lamb, beta, max_k, lgamma):
     lprob = -np.inf
-    for k in range(K + 1):
-        lprob = np.logaddexp(lprob, lprob_k_given_N(N, k, delta, lamb, beta, lgamma))
-    return lprob
+    for k in range(1, max_k + 1):
+        lprob = np.logaddexp(lprob,
+                             lprob_k_given_N(N, k, delta, lamb, beta, lgamma) + np.log(k))
+    return np.exp(lprob)
+
+# @memoize
+# def lprob_transmission(N, K, delta, lamb, beta, lgamma):
+#     lprob = -np.inf
+#     for k in range(K + 1):
+#         lprob = np.logaddexp(lprob, lprob_k_given_N(N, k, delta, lamb, beta, lgamma))
+#     return lprob
 
 
 @memoize
