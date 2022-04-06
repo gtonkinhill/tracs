@@ -28,7 +28,7 @@ def main():
     )
 
     io_opts.add_argument(
-        "--dates",
+        "--meta",
         dest="metadata",
         required=True,
         help="""Location of metadata in csv format. The first column must include the 
@@ -140,7 +140,6 @@ def main():
             names = snp_dists[3]
 
             # Estimate transmission distances
-            print(len(snp_dists[:3]))
             transmission_dists, expectedk, datediff = calculate_trans_prob(
                 snp_dists[:3],
                 sample_dates=dates,

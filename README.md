@@ -112,5 +112,34 @@ Transmission distance options:
 
 ## Clustering
 
-Coming soon...
+```
+usage: cluster [-h] -d DISTANCE_FILE -o OUTPUT_FILE -c THRESHOLD -D
+               {SNP,direct,expectedK} [-t N_CPU] [--quiet] [--version]
+
+Groups samples into putative transmission clusters using single linkage
+clustering
+
+options:
+  -h, --help            show this help message and exit
+  -t N_CPU, --threads N_CPU
+                        number of threads to use (default=1)
+  --quiet               turns off some console output
+  --version             show program's version number and exit
+
+Input/output:
+  -d DISTANCE_FILE, --distances DISTANCE_FILE
+                        Pairwise distance estimates obtained from running the
+                        'distance' function
+  -o OUTPUT_FILE, --output OUTPUT_FILE
+                        name of the output file to store the resulting cluster
+                        assignments
+
+Cluster options:
+  -c THRESHOLD, --threshold THRESHOLD
+                        Distance threshold. Samples will be grouped together
+                        if the distance between them is below this threshold.
+  -D {SNP,direct,expectedK}, --distance {SNP,direct,expectedK}
+                        The type of transmission distance to use. Can be one
+                        of 'SNP', 'direct', 'expectedK'
+```
 

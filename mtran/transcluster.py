@@ -63,14 +63,6 @@ def expected_k(N, delta, lamb, beta, max_k, lgamma):
                              lprob_k_given_N(N, k, delta, lamb, beta, lgamma) + np.log(k))
     return np.exp(lprob)
 
-# @memoize
-# def lprob_transmission(N, K, delta, lamb, beta, lgamma):
-#     lprob = -np.inf
-#     for k in range(K + 1):
-#         lprob = np.logaddexp(lprob, lprob_k_given_N(N, k, delta, lamb, beta, lgamma))
-#     return lprob
-
-
 @memoize
 @jit(nopython=True)
 def lprob_k_given_N(N, k, delta, lamb, beta, lgamma):
