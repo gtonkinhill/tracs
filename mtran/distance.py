@@ -119,6 +119,9 @@ def main():
         args.trans_threshold = -1
 
     # Load dates
+    if not args.quiet:
+        print("Loading metadata...")
+
     dates = {}
     with open(args.metadata, "r") as infile:
         next(infile)
@@ -126,10 +129,15 @@ def main():
             line = line.strip().split(",")
             dates[line[0]] = (line[1], date.fromisoformat(line[1]))
 
+    if not args.quiet:
+        print("Estimating transmission distances...")
+
     with open(args.output_file, "w") as outfile:
         outfile.write("sampleA,sampleB,date difference,SNP distance,transmission distance,expected K\n")
         for msa in args.msa_files:
             # Estimate SNP distances
+            if not args.quiet:
+                print("Calculating pairwise snp distances for %s" % msa)
             # I, J, dist, names
             snp_dists = pairsnp(
                 fasta=msa,
@@ -140,6 +148,8 @@ def main():
             names = snp_dists[3]
 
             # Estimate transmission distances
+            if not args.quiet:
+                print("Inferring transmission probabilities for %s" % msa)
             transmission_dists, expectedk, datediff = calculate_trans_prob(
                 snp_dists[:3],
                 sample_dates=dates,
@@ -147,10 +157,11 @@ def main():
                 lamb=args.clock_rate,
                 beta=args.trans_rate,
                 samplenames=snp_dists[3],
-                log=False,
-            )
+                log=False)
 
             # Write output
+            if not args.quiet:
+                print("Saving distances for %s" % msa)
             for i, j, dateD, snpD, expK, tranD  in zip(
                 snp_dists[0], snp_dists[1], datediff, snp_dists[2], expectedk, transmission_dists
             ):

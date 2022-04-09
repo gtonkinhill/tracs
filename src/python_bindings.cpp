@@ -1,5 +1,6 @@
 #include <pybind11/stl.h>
 #include "pairsnp.hpp"
+#include "transcluster.hpp"
 
 namespace py = pybind11;
 
@@ -9,5 +10,13 @@ PYBIND11_MODULE(MTRAN, m) {
   m.def("pairsnp", &pairsnp, py::return_value_policy::take_ownership,
         "Run pairsnp", py::arg("fasta"), py::arg("n_threads"), py::arg("dist"),
         py::arg("knn"));
+
+  m.def("lprob_k_given_N", &lprob_k_given_N, py::return_value_policy::take_ownership,
+    "Probability of K intermediate hosts given N SNPs",
+    py::arg("N"), py::arg("k"), py::arg("delta"), py::arg("lamb"), py::arg("beta"), py::arg("lgamma"));
+
+  m.def("trans_dist", &trans_dist, py::return_value_policy::take_ownership,
+    "Calculate transmission probabilities and expectation for a vector of distances",
+    py::arg("snpdiff"),  py::arg("datediff"), py::arg("lamb"), py::arg("beta"));
 
 }

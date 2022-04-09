@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup, Extension, find_packages
 import platform
 from glob import glob
 from pybind11.setup_helpers import Pybind11Extension, build_ext
@@ -55,6 +55,7 @@ elif openmp:
     extra_link_args.insert(-1, "-fopenmp")
     extra_link_args.insert(-1, "-L/data1/gerryt/software/miniconda3/envs/mtrans/lib")
 
+
 ext_modules = [
     Pybind11Extension("MTRAN",
         ["src/python_bindings.cpp"],
@@ -63,7 +64,6 @@ ext_modules = [
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args),
 ]
-
 
 
 setup(

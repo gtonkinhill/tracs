@@ -16,7 +16,7 @@ Mtran is a python package and can be installed easily using pip.
 pip3 install git+https://github.com/gtonkinhill/mtran
 ```
 
-This is all that is needed for the pairwise distance command. To run the alignment command you will also need to install [minimap2](https://github.com/lh3/minimap2) and [htsbox](https://github.com/lh3/htsbox).
+This is all that is needed for the pairwise distance and clustering commands. To generate alignments you will also need to install [minimap2](https://github.com/lh3/minimap2) and [htsbox](https://github.com/lh3/htsbox).
 
 ## Alignment
 
@@ -121,8 +121,6 @@ clustering
 
 options:
   -h, --help            show this help message and exit
-  -t N_CPU, --threads N_CPU
-                        number of threads to use (default=1)
   --quiet               turns off some console output
   --version             show program's version number and exit
 
