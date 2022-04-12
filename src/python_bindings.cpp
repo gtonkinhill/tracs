@@ -1,6 +1,7 @@
 #include <pybind11/stl.h>
 #include "pairsnp.hpp"
 #include "transcluster.hpp"
+#include "dmultinomial.hpp"
 
 namespace py = pybind11;
 
@@ -18,5 +19,9 @@ PYBIND11_MODULE(MTRAN, m) {
   m.def("trans_dist", &trans_dist, py::return_value_policy::take_ownership,
     "Calculate transmission probabilities and expectation for a vector of distances",
     py::arg("snpdiff"),  py::arg("datediff"), py::arg("lamb"), py::arg("beta"));
+
+  m.def("calculate_posteriors", &calculate_posteriors, py::return_value_policy::take_ownership,
+    "Calculate posterior count estimates",
+    py::arg("counts"),  py::arg("alphas"), py::arg("keep"), py::arg("threshold"));
 
 }

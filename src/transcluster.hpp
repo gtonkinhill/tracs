@@ -76,7 +76,7 @@ inline static double logaddexpd(double x, double y)
 
 
 
-double lprob_k_given_N(int N, int k, double delta, double lamb, double beta, const std::vector<double>& lgamma)
+double lprob_k_given_N(size_t N, size_t k, double delta, double lamb, double beta, const std::vector<double>& lgamma)
 {
 
     double lprob;
@@ -87,7 +87,7 @@ double lprob_k_given_N(int N, int k, double delta, double lamb, double beta, con
 
         // ugly poisson cdf
         double pois_cdf = -INFINITY;
-        for (int i = 0; i <= N; i++)
+        for (size_t i = 0; i <= N; i++)
         {
             pois_cdf = logaddexpd(i * log(lamb * delta) - lgamma[i + 1], pois_cdf);
         }
@@ -95,7 +95,7 @@ double lprob_k_given_N(int N, int k, double delta, double lamb, double beta, con
         lprob -= pois_cdf;
 
         double integral = -INFINITY;
-        for (int i = 0; i <= N + k; i++)
+        for (size_t i = 0; i <= N + k; i++)
         {
             integral = logaddexpd(
                 lgamma[N + k + 1] - lgamma[i + 1] - lgamma[N + k - i + 1] + (N + k - i) * log(delta) + lgamma[i + 1] - (i + 1) * log(lamb + beta),
@@ -160,12 +160,12 @@ trans_dist(const std::vector<int>& snpdiff, const std::vector<double>& datediff,
     std::tuple<int, double> key;
     std::tuple<int, int, double> keyB;
 
-    for (int i=0; i<snpdiff.size(); i++){
+    for (size_t i=0; i<snpdiff.size(); i++){
         key = std::make_tuple(snpdiff[i], datediff[i]);
         if (eK_map.count(key)){
             eK[i] = eK_map[key];
         } else {
-            eK[i] = expected_k(snpdiff[i], datediff[i], lamb, beta, 1000, lg, kN_map);
+            eK[i] = expected_k(snpdiff[i], datediff[i], lamb, beta, 100, lg, kN_map);
             eK_map[key] = eK[i];
         }
 

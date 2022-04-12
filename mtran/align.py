@@ -11,7 +11,8 @@ import numpy as np
 from .__init__ import __version__
 from .utils import sketch_files, gather
 from .pileup import align_and_pileup
-from .dirichlet_multinomial import find_dirichlet_priors, calculate_posteriors
+from .dirichlet_multinomial import find_dirichlet_priors
+from MTRAN import calculate_posteriors
 
 
 
@@ -232,13 +233,13 @@ def main():
             args.expected_freq_threshold = alphas[1]/(np.sum(alphas) + 50)
         
         if not args.quiet:
-                print('Using frequency threshold:', args.expected_freq_threshold)
-                print('Calculating expected frequency estimates...')
+            print('Calculating posterior frequency estimates...')
+            print('Filtering sites with posterior estimates below frequency threshold:', args.expected_freq_threshold)
+            if args.keep_all:
+                print('Keeping all observed alleles')
 
-        calculate_posteriors(all_counts, alphas, args.keep_all, args.expected_freq_threshold)
-
-        # Filter out those below the threshold
-        all_counts[all_counts < args.expected_freq_threshold] = 0
+        # Calculate posterior frequency estimates and filter out those below the threshold
+        all_counts = calculate_posteriors(all_counts, alphas, args.keep_all, args.expected_freq_threshold)
 
         # save allele counts to file
         if not args.quiet:

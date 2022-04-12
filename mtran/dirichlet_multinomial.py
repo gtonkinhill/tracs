@@ -47,27 +47,3 @@ def find_dirichlet_priors(data, max_iter=1000, tol=1e-5, method='LOO'):
     print("Calculated alphas: ", alpha)
 
     return (alpha)
-
-@jit(nopython=True)
-def calculate_posteriors(counts, alphas, keep_all, expected_freq_threshold):
-    a0 = np.sum(alphas)
-    amin = alphas[1]/a0
-    for i in range(counts.shape[0]):
-        if keep_all:
-            k = counts[i,:]>0
-        
-        if np.sum(counts[i,:]) == 0:
-            counts[i,:] = amin
-        else:
-            denom = np.sum(counts[i,:]) + a0
-            for a, c in enumerate(np.sort(np.unique(counts[i,:]))[::-1]):
-                a = alphas[a]
-                for j in range(4):
-                    if counts[i,j]==c:
-                        counts[i,j] = (counts[i,j] + a)/denom
-
-        if keep_all:
-            counts[i,:][(counts[i,:]<expected_freq_threshold) & k] = expected_freq_threshold
-
-    return
-
