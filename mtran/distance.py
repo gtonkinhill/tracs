@@ -6,6 +6,7 @@ import numpy as np
 
 from MTRAN import pairsnp
 from .transcluster import calculate_trans_prob
+from .utils import check_positive_int, check_positive_float
 from .__init__ import __version__
 
 
@@ -52,8 +53,8 @@ def main():
         "--snp_threshold",
         dest="snp_threshold",
         help="Only output those transmission pairs with a SNP distance <= D",
-        type=int,
-        default=10,
+        type=check_positive_int,
+        default=2147483647,
     )
 
     transdist = parser.add_argument_group("Transmission distance options")
@@ -62,7 +63,7 @@ def main():
         "--clock_rate",
         dest="clock_rate",
         help="clock rate as defined in the transcluster paper (SNPs/genome/year) default=1e-3 * 29903",
-        type=float,
+        type=check_positive_float,
         default=1e-3 * 29903,
     )
 
@@ -70,7 +71,7 @@ def main():
         "--trans_rate",
         dest="trans_rate",
         help="transmission rate as defined in the transcluster paper (transmissions/year) default=73",
-        type=float,
+        type=check_positive_float,
         default=73,
     )
 
@@ -81,7 +82,7 @@ def main():
         help=(
             "Only outputs those pairs where the most likely number of intermediate hosts <= K"
         ),
-        type=int,
+        type=check_positive_int,
         default=None,
     )
 
@@ -91,7 +92,7 @@ def main():
         "--threads",
         dest="n_cpu",
         help="number of threads to use (default=1)",
-        type=int,
+        type=check_positive_int,
         default=1,
     )
 
@@ -108,15 +109,6 @@ def main():
     )
 
     args = parser.parse_args()
-
-    # setup input parameters
-    if args.snp_threshold > 0:
-        args.snp_threshold = int(args.snp_threshold) + 1
-    else:
-        args.snp_threshold = -1
-
-    if args.trans_threshold is None:
-        args.trans_threshold = -1
 
     # Load dates
     if not args.quiet:
@@ -140,10 +132,9 @@ def main():
                 print("Calculating pairwise snp distances for %s" % msa)
             # I, J, dist, names
             snp_dists = pairsnp(
-                fasta=msa,
+                fasta=[msa],
                 n_threads=args.n_cpu,
-                dist=args.snp_threshold,
-                knn=args.trans_threshold,
+                dist=args.snp_threshold
             )
             names = snp_dists[3]
 

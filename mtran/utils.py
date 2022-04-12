@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 
 # import sourmash stuff
 import screed
@@ -183,3 +184,15 @@ def gather(
     return (references)
 
 
+def check_positive_int(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+    return ivalue
+
+
+def check_positive_float(value):
+    ivalue = float(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid positive float value" % value)
+    return ivalue

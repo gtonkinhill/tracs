@@ -23,30 +23,20 @@ std::vector<T> combine_vectors(const std::vector<std::vector<T>> &vec,
 
 KSEQ_INIT(gzFile, gzread)
 
-inline std::tuple<std::vector<uint64_t>, std::vector<uint64_t>,
-                  std::vector<double>, std::vector<std::string>>
-pairsnp(const char *fasta, int n_threads, int dist, int knn) {
-  if (knn > 0 && dist > 0) {
-    throw std::runtime_error("Specify only one of knn or dist");
-  }
+std::pair <size_t, size_t> load_seqs(std::string fasta, 
+  std::vector<boost::dynamic_bitset<>> &A_snps, 
+  std::vector<boost::dynamic_bitset<>> &C_snps, 
+  std::vector<boost::dynamic_bitset<>> &G_snps, 
+  std::vector<boost::dynamic_bitset<>> &T_snps,
+  std::vector<std::string> &seq_names){
 
-  // using namespace std::literals;
-  // const auto start = std::chrono::steady_clock::now();
-
-  // open filename and initialise kseq
   int l;
-  gzFile fp = gzopen(fasta, "r");
-  kseq_t *seq = kseq_init(fp);
-
-  size_t n_seqs = 0;
   size_t seq_length = 0;
+  size_t count=0;
+  gzFile fp;
 
-  // initialise bitmaps
-  std::vector<std::string> seq_names;
-  std::vector<boost::dynamic_bitset<>> A_snps;
-  std::vector<boost::dynamic_bitset<>> C_snps;
-  std::vector<boost::dynamic_bitset<>> G_snps;
-  std::vector<boost::dynamic_bitset<>> T_snps;
+  fp = gzopen(fasta.c_str(), "r");
+  kseq_t *seq = kseq_init(fp);
 
   while (true) {
     l = kseq_read(seq);
@@ -61,7 +51,7 @@ pairsnp(const char *fasta, int n_threads, int dist, int knn) {
     }
 
     // check sequence length
-    if ((n_seqs > 0) && (seq->seq.l != seq_length)) {
+    if ((count > 0) && (seq->seq.l != seq_length)) {
       throw std::runtime_error(
           "Error reading FASTA, variable sequence lengths!");
     }
@@ -169,11 +159,49 @@ pairsnp(const char *fasta, int n_threads, int dist, int knn) {
     G_snps.push_back(Gs);
     T_snps.push_back(Ts);
 
-    n_seqs++;
+    count++;
   }
   kseq_destroy(seq);
   gzclose(fp);
-  knn = knn >= (long)n_seqs ? n_seqs - 1 : knn;
+
+  return std::make_pair(count,seq_length);
+}
+
+
+inline std::tuple<std::vector<uint64_t>, std::vector<uint64_t>,
+                  std::vector<double>, std::vector<std::string>>
+pairsnp(const std::vector<std::string> fastas, int n_threads, int dist) {
+
+  // open filename and initialise kseq
+  size_t n_seqs = 0;
+  size_t seq_length;
+  size_t i_end, j_start;
+
+
+  // initialise bitmaps
+  std::vector<std::string> seq_names;
+  std::vector<boost::dynamic_bitset<>> A_snps;
+  std::vector<boost::dynamic_bitset<>> C_snps;
+  std::vector<boost::dynamic_bitset<>> G_snps;
+  std::vector<boost::dynamic_bitset<>> T_snps;
+
+  if ((fastas.size()<0) || (fastas.size()>2)) {
+    throw std::runtime_error("Invalid number of fasta files!");
+  }
+
+  // Load first sequence file
+  std::pair <size_t, size_t> ls;
+  ls = load_seqs(fastas[0], A_snps, C_snps, G_snps, T_snps, seq_names);
+  n_seqs = i_end = ls.first;
+  seq_length = ls.second;
+  
+  // deal with search range and load second file if provided
+  if (fastas.size()==1){
+    j_start = 0;
+  } else {
+    j_start = n_seqs;
+    n_seqs += load_seqs(fastas[1], A_snps, C_snps, G_snps, T_snps, seq_names).first;
+  } 
 
   // Set up progress meter
   // static const uint64_t n_progress_ticks = 1000;
@@ -192,41 +220,30 @@ pairsnp(const char *fasta, int n_threads, int dist, int knn) {
   bool interrupt = false;
 
 #pragma omp parallel for schedule(static) reduction(+:len) num_threads(n_threads)
-  for (uint64_t i = 0; i < n_seqs; i++) {
+  for (uint64_t i = 0; i < i_end; i++) {
     // Cannot throw in an openmp block, short circuit instead
     if (interrupt || PyErr_CheckSignals() != 0) {
       interrupt = true;
     } else {
-      std::vector<int> comp_snps(n_seqs);
+      int d;
       boost::dynamic_bitset<> res(seq_length);
 
-      for (uint64_t j = 0; j < n_seqs; j++) {
+      for (uint64_t j = std::max(j_start, i+1); j < n_seqs; j++) {
 
         res = A_snps[i] & A_snps[j];
         res |= C_snps[i] & C_snps[j];
         res |= G_snps[i] & G_snps[j];
         res |= T_snps[i] & T_snps[j];
 
-        comp_snps[j] = seq_length - res.count();
-      }
+        d = seq_length - res.count();
 
-      // if using knn find the distance needed
-      int row_dist_cutoff = dist;
-      if (knn > 0) {
-        std::vector<int> s_comp = comp_snps;
-        std::sort(s_comp.begin(), s_comp.end());
-        row_dist_cutoff =
-            s_comp[knn]; // knn is 1-indexed, so self will be ignored
-      }
-
-      // output distances
-      for (size_t j = 0; j < n_seqs; j++) {
-        if ((row_dist_cutoff < 0) || (comp_snps[j] <= row_dist_cutoff)) {
+        if (d <= dist) {
           rows[i].push_back(i);
           cols[i].push_back(j);
-          distances[i].push_back(comp_snps[j]);
+          distances[i].push_back(d);
         }
       }
+
       len += distances[i].size();
 
 //       if (i % update_every == 0) {
@@ -247,9 +264,6 @@ pairsnp(const char *fasta, int n_threads, int dist, int knn) {
   std::vector<double> distances_all = combine_vectors(distances, len);
   std::vector<uint64_t> rows_all = combine_vectors(rows, len);
   std::vector<uint64_t> cols_all = combine_vectors(cols, len);
-
-  const auto end = std::chrono::steady_clock::now();
-  // std::cerr << "SNP distances took " << (end - start) / 1s << "s" << std::endl;
 
   return std::make_tuple(rows_all, cols_all, distances_all, seq_names);
 }
