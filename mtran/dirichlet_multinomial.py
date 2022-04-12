@@ -5,8 +5,6 @@
 import numpy as np
 from scipy.special import psi
 
-from numba import jit
-
 
 def find_dirichlet_priors(data, max_iter=1000, tol=1e-5, method='LOO'):
     K = np.shape(data)[1]
