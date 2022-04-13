@@ -19,9 +19,7 @@ def sketch_files(input_files, prefix, outputfile, sourmash_params):
     print(outputfile)
 
     # create hash from reads
-    signatures_factory = _signatures_for_sketch_factory(
-        [sourmash_params], "dna", False
-    )
+    signatures_factory = _signatures_for_sketch_factory([sourmash_params], "dna", False)
     sigs = signatures_factory()
 
     total_seq = 0
@@ -34,7 +32,8 @@ def sketch_files(input_files, prefix, outputfile, sourmash_params):
             if n % 10000 == 0 and n:
                 print(f"\r... {filename} {n}")
             add_seq(sigs, record.sequence, False, False)
-            if n % 20000 == 0 and n: break
+            if n % 20000 == 0 and n:
+                break
 
         if n is not None:
             print(f"... {filename} {n + 1} sequences")
@@ -51,7 +50,6 @@ def sketch_files(input_files, prefix, outputfile, sourmash_params):
     save_siglist(sigs, outputfile)
 
     return
-
 
 
 def gather(
@@ -181,7 +179,7 @@ def gather(
             )
             references.append(result.name)
 
-    return (references)
+    return references
 
 
 def check_positive_int(value):
@@ -194,5 +192,7 @@ def check_positive_int(value):
 def check_positive_float(value):
     ivalue = float(value)
     if ivalue <= 0:
-        raise argparse.ArgumentTypeError("%s is an invalid positive float value" % value)
+        raise argparse.ArgumentTypeError(
+            "%s is an invalid positive float value" % value
+        )
     return ivalue

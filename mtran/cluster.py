@@ -7,9 +7,6 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 
 
-from .__init__ import __version__
-
-
 def index_count(name):
     if "dict" not in index_count.__dict__:
         index_count.dict = {}
@@ -23,12 +20,9 @@ def index_count(name):
     return index_count.dict[name]
 
 
-def main():
+def cluster_parser(parser):
 
-    parser = argparse.ArgumentParser(
-        description="Groups samples into putative transmission clusters using single linkage clustering",
-        prog="cluster",
-    )
+    parser.description = "Groups samples into putative transmission clusters using single linkage clustering"
 
     io_opts = parser.add_argument_group("Input/output")
 
@@ -50,9 +44,9 @@ def main():
         type=str,
     )
 
-    cluster = parser.add_argument_group("Cluster options")
+    cluster_opts = parser.add_argument_group("Cluster options")
 
-    cluster.add_argument(
+    cluster_opts.add_argument(
         "-c",
         "--threshold",
         dest="threshold",
@@ -61,7 +55,7 @@ def main():
         required=True,
     )
 
-    cluster.add_argument(
+    cluster_opts.add_argument(
         "-D",
         "--distance",
         dest="distance",
@@ -80,19 +74,19 @@ def main():
         default=False,
     )
 
-    parser.add_argument(
-        "--version", action="version", version="%(prog)s " + __version__
-    )
+    parser.set_defaults(func=cluster)
 
-    args = parser.parse_args()
+    return parser
 
-    match args.distance:
-        case "SNP":
-            col_index = 3
-        case "direct":
-            col_index = 4
-        case "expectedK":
-            col_index = 5
+
+def cluster(args):
+
+    if args.distance == "SNP":
+        col_index = 3
+    elif args.distance == "direct":
+        col_index = 4
+    elif args.distance == "expectedK":
+        col_index = 5
 
     # Load distances
     I = []
@@ -129,6 +123,18 @@ def main():
         outfile.write("sample,cluster\n")
         for i, lab in enumerate(labels):
             outfile.write(names[i] + "," + str(lab) + "\n")
+
+    return
+
+
+def main():
+    # set up and parse arguments
+    parser = argparse.ArgumentParser()
+    parser = cluster_parser(parser)
+    args = parser.parse_args()
+
+    # run cluster command
+    args.func(args)
 
     return
 

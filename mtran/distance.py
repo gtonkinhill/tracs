@@ -7,15 +7,11 @@ import numpy as np
 from MTRAN import pairsnp
 from .transcluster import calculate_trans_prob
 from .utils import check_positive_int, check_positive_float
-from .__init__ import __version__
 
 
-def main():
+def distance_parser(parser):
 
-    parser = argparse.ArgumentParser(
-        description="Estimates pairwise SNP and transmission distances between each pair of samples aligned to the same reference genome.",
-        prog="dist",
-    )
+    parser.description = "Estimates pairwise SNP and transmission distances between each pair of samples aligned to the same reference genome."
 
     io_opts = parser.add_argument_group("Input/output")
 
@@ -26,6 +22,14 @@ def main():
         help="Input fasta files formatted by the align and merge functions",
         type=os.path.abspath,
         nargs="+",
+    )
+
+    io_opts.add_argument(
+        "--msa-db",
+        dest="msa_db",
+        help="A database MSA used to compare each sequence to. By default this is not uses and all pairwise comparisons within each MSA are considered.",
+        type=os.path.abspath,
+        default=None,
     )
 
     io_opts.add_argument(
@@ -104,11 +108,12 @@ def main():
         default=False,
     )
 
-    parser.add_argument(
-        "--version", action="version", version="%(prog)s " + __version__
-    )
+    parser.set_defaults(func=distance)
 
-    args = parser.parse_args()
+    return parser
+
+
+def distance(args):
 
     # Load dates
     if not args.quiet:
@@ -125,16 +130,20 @@ def main():
         print("Estimating transmission distances...")
 
     with open(args.output_file, "w") as outfile:
-        outfile.write("sampleA,sampleB,date difference,SNP distance,transmission distance,expected K\n")
+        outfile.write(
+            "sampleA,sampleB,date difference,SNP distance,transmission distance,expected K\n"
+        )
         for msa in args.msa_files:
             # Estimate SNP distances
             if not args.quiet:
                 print("Calculating pairwise snp distances for %s" % msa)
             # I, J, dist, names
+            if args.msa_db is not None:
+                msas = [msa, args.msa_db]
+            else:
+                msas = [msa]
             snp_dists = pairsnp(
-                fasta=[msa],
-                n_threads=args.n_cpu,
-                dist=args.snp_threshold
+                fasta=msas, n_threads=args.n_cpu, dist=args.snp_threshold
             )
             names = snp_dists[3]
 
@@ -148,20 +157,45 @@ def main():
                 lamb=args.clock_rate,
                 beta=args.trans_rate,
                 samplenames=snp_dists[3],
-                log=False)
+                log=False,
+            )
 
             # Write output
             if not args.quiet:
                 print("Saving distances for %s" % msa)
-            for i, j, dateD, snpD, expK, tranD  in zip(
-                snp_dists[0], snp_dists[1], datediff, snp_dists[2], expectedk, transmission_dists
+            for i, j, dateD, snpD, expK, tranD in zip(
+                snp_dists[0],
+                snp_dists[1],
+                datediff,
+                snp_dists[2],
+                expectedk,
+                transmission_dists,
             ):
-                outfile.write(
-                    ",".join(
-                        [names[i], names[j], str(dateD), str(int(snpD)), str(tranD), str(expK)]
+                if (args.trans_threshold is None) or (args.trans_threshold >= expK):
+                    outfile.write(
+                        ",".join(
+                            [
+                                names[i],
+                                names[j],
+                                str(dateD),
+                                str(int(snpD)),
+                                str(tranD),
+                                str(expK),
+                            ]
+                        )
+                        + "\n"
                     )
-                    + "\n"
-                )
+    return
+
+
+def main():
+    # set up and parse arguments
+    parser = argparse.ArgumentParser()
+    parser = distance_parser(parser)
+    args = parser.parse_args()
+
+    # run distance command
+    args.func(args)
 
     return
 
