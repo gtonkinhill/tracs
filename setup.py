@@ -71,11 +71,11 @@ setup(
     version=find_version("mtran/__init__.py"),
     author="Gerry Tonkin-Hill",
     description=
-    "A fast python and and c++ pipeline for clustering sequences using the 'transcluster' method",
+    "A fast python and and c++ pipeline for identifying transmission clusters from single genome and metagenomic data",
     long_description_content_type="text/markdown",
     url="https://github.com/gtonkinhill/mtran",
     install_requires=[
-        'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'tqdm'
+        'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'screed'
     ],
     python_requires='>=3.6.0',
     packages=['mtran'],

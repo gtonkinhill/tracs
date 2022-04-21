@@ -12,6 +12,12 @@ def align_and_pileup(
     aligner="minimap2",
     minimap_preset="sr",
     minimap_params=None,
+    Q = 0, #minimum base quality
+    q = 0, #minimum mapping quality
+    l = 0, #minimum query length
+    S = 0, #minimum supplementary alignment length
+    V = 1, #ignore queries with per-base divergence >FLOAT [1]
+    T = 0, #ignore bases within INT-bp from either end of a read [0]
     n_cpu=1,
     quiet=False,
 ):
@@ -48,7 +54,13 @@ def align_and_pileup(
 
     # run pileup
     cmd = "htsbox pileup -C "
-    cmd += temp_file.name
+    cmd += ' -Q ' + str(Q)
+    cmd += ' -q ' + str(q)
+    cmd += ' -l ' + str(l)
+    cmd += ' -S ' + str(S)
+    cmd += ' -V ' + str(V)
+    cmd += ' -T ' + str(T)
+    cmd += ' ' + temp_file.name
     cmd += " > " + prefix + "_pileup.txt"
 
     if not quiet:

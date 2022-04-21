@@ -95,6 +95,23 @@ def align_parser(parser):
         default=0,
     )
 
+    pileup.add_argument(
+        "-V",
+        "--max_div",
+        dest="max_div",
+        help="ignore queries with per-base divergence > max_div (default=1)",
+        type=float,
+        default=1,
+    )
+
+    pileup.add_argument(
+        "--trim",
+        dest="trim",
+        help="ignore bases within TRIM-bp from either end of a read (default=0)",
+        type=int,
+        default=0,
+    )
+
     posterior = parser.add_argument_group("Posterior count estimates")
 
     posterior.add_argument(
@@ -216,6 +233,11 @@ def align(args):
                 aligner="minimap2",
                 minimap_preset=args.minimap_preset,
                 minimap_params=None,
+                Q = args.min_base_qual, #minimum base quality
+                q = args.min_map_qual, #minimum mapping quality
+                l = args.min_query_len, #minimum query length
+                V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
+                T = args.trim, #ignore bases within INT-bp from either end of a read [0]
                 n_cpu=args.n_cpu,
                 quiet=args.quiet,
             )

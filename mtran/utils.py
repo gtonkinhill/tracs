@@ -29,11 +29,9 @@ def sketch_files(input_files, prefix, outputfile, sourmash_params):
 
         n = None
         for n, record in enumerate(screed.open(filename)):
-            if n % 10000 == 0 and n:
-                print(f"\r... {filename} {n}")
+            if n % 100000 == 0 and n:
+                print(f"\r... {filename} {n} sequences sketched")
             add_seq(sigs, record.sequence, False, False)
-            if n % 20000 == 0 and n:
-                break
 
         if n is not None:
             print(f"... {filename} {n + 1} sequences")
