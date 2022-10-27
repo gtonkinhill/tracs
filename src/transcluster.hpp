@@ -111,6 +111,22 @@ double lprob_k_given_N(size_t N, size_t k, double delta, double lamb, double bet
     return (lprob);
 }
 
+
+// double max_error(const std::vector<double> &lgamma, double delta, double lamb, double beta, size_t N, size_t K)
+// {
+//     double max_error = -INFINITY;
+//     for (size_t k = 0; k <= K; k++)
+//     {
+//         double lprob = lprob_k_given_N(N, k, delta, lamb, beta, lgamma);
+//         if (lprob > max_error)
+//         {
+//             max_error = lprob;
+//         }
+//     }
+//     return max_error;
+// }
+
+
 double expected_k(int N, double delta, double lamb, double beta, int max_k,
                   const std::vector<double> &lgamma,
                   std::unordered_map<std::tuple<int, int, double>, double> &kN_map)
