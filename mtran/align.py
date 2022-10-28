@@ -8,7 +8,7 @@ from zipfile import ZipFile
 import tempfile
 import numpy as np
 
-from .utils import sketch_files, gather
+from .utils import run_gather
 from .pileup import align_and_pileup
 from .dirichlet_multinomial import find_dirichlet_priors
 from MTRAN import calculate_posteriors
@@ -205,7 +205,7 @@ def align(args):
         archive.extract("sourmashDB.sbt.zip", temp_dir)
 
     # run soursmash 'gather' method
-    references = gather(
+    references = run_gather(
         input_files=args.input_files,
         databasefile=temp_dir + "sourmashDB.sbt.zip",
         output=args.output_dir + args.prefix + "_sourmash_hits",
