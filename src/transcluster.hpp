@@ -141,7 +141,7 @@ double expected_k(int N, double delta, double lamb, double beta, int max_k,
 }
 
 inline std::tuple<std::vector<double>, std::vector<double>>
-trans_dist(const std::vector<int> &snpdiff, const std::vector<double> &datediff, double lamb, double beta)
+trans_dist(const std::vector<int> &snpdiff, const std::vector<double> &datediff, double lamb, double beta, size_t maxK=100)
 {
 
     // chache results
@@ -172,7 +172,7 @@ trans_dist(const std::vector<int> &snpdiff, const std::vector<double> &datediff,
         }
         else
         {
-            eK[i] = expected_k(snpdiff[i], datediff[i], lamb, beta, 100, lg, kN_map);
+            eK[i] = expected_k(snpdiff[i], datediff[i], lamb, beta, maxK, lg, kN_map);
             eK_map[key] = eK[i];
         }
 

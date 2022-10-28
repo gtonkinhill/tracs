@@ -18,7 +18,7 @@ PYBIND11_MODULE(MTRAN, m)
 
   m.def("trans_dist", &trans_dist, py::return_value_policy::take_ownership,
         "Calculate transmission probabilities and expectation for a vector of distances",
-        py::arg("snpdiff"), py::arg("datediff"), py::arg("lamb"), py::arg("beta"));
+        py::arg("snpdiff"), py::arg("datediff"), py::arg("lamb"), py::arg("beta"), py::arg("mK"));
 
   m.def("calculate_posteriors", &calculate_posteriors, py::return_value_policy::take_ownership,
         "Calculate posterior count estimates",
