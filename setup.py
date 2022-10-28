@@ -75,7 +75,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/gtonkinhill/mtran",
     install_requires=[
-        'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'screed'
+        'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'pybind11'
     ],
     python_requires='>=3.6.0',
     packages=['mtran'],
