@@ -5,6 +5,27 @@ import argparse
 import subprocess
 
 
+def run_sketch(
+    input_files,
+    prefix,
+    output,
+    ksize=51,
+    scaled=10000):
+
+    cmd = "sourmash sketch dna"
+    cmd += " --merge " + prefix
+    cmd += " -p " + f"scaled={scaled},k={ksize},noabund"
+    cmd += " -o " + output
+    cmd += " " + " ".join(input_files)
+
+    print(f"sketching input files...")
+    print(f"command: {cmd}")
+    subprocess.run(cmd, shell=True, check=True)
+
+    return
+
+
+
 def run_gather(
     input_files,
     databasefile,
@@ -17,15 +38,13 @@ def run_gather(
     cache_size=0):
 
     # Hash query
-    cmd = "sourmash sketch dna"
-    cmd += " --merge query"
-    cmd += " -p " + f"scaled={scaled},k={ksize},noabund"
-    cmd += " -o " + temp_dir + "query.sig"
-    cmd += " " + " ".join(input_files)
-
-    print(f"sketching input files...")
-    print(f"command: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    run_sketch(
+        input_files=input_files,
+        prefix='query',
+        output=temp_dir + "query.sig",
+        ksize=ksize,
+        scaled=scaled
+    )
 
     # Run Sourmash Gather
     cmd = "sourmash gather"
@@ -50,3 +69,19 @@ def run_gather(
             references.append(line[9])
 
     return references
+
+
+def check_positive_int(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+    return ivalue
+
+
+def check_positive_float(value):
+    ivalue = float(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(
+            "%s is an invalid positive float value" % value
+        )
+    return ivalue

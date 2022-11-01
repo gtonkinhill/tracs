@@ -76,7 +76,7 @@ def distance_parser(parser):
         dest="trans_rate",
         help="transmission rate as defined in the transcluster paper (transmissions/year) default=73",
         type=check_positive_float,
-        default=73,
+        default=73.0,
     )
 
     transdist.add_argument(
@@ -128,7 +128,7 @@ def distance(args):
 
     if not args.quiet:
         print("Estimating transmission distances...")
-
+    
     with open(args.output_file, "w") as outfile:
         outfile.write(
             "sampleA,sampleB,date difference,SNP distance,transmission distance,expected K\n"
@@ -142,6 +142,7 @@ def distance(args):
                 msas = [msa, args.msa_db]
             else:
                 msas = [msa]
+            
             snp_dists = pairsnp(
                 fasta=msas, n_threads=args.n_cpu, dist=args.snp_threshold
             )

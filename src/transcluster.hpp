@@ -74,10 +74,25 @@ inline static double logaddexpd(double x, double y)
     return tmp;
 }
 
-double lprob_k_given_N(size_t N, size_t k, double delta, double lamb, double beta, const std::vector<double> &lgamma)
+
+// inline static double logsubexpd(double x, double y)
+// {
+//     if (x == y)
+//         return -INFINITY;
+
+//     if (y>x)
+//         return NAN;
+
+//     return x + log1p(-exp(-(x - y)));
+
+// }
+
+inline std::tuple<double, double>
+lprob_k_given_N(size_t N, size_t k, double delta, double lamb, double beta, const std::vector<double> &lgamma)
 {
 
     double lprob;
+    double lhs;
 
     if (delta > 0)
     {
@@ -101,68 +116,91 @@ double lprob_k_given_N(size_t N, size_t k, double delta, double lamb, double bet
         }
 
         integral -= lgamma[N + 1];
+        lhs = lprob;
         lprob += integral;
     }
     else
     {
         lprob = ((N + 1) * log(lamb) + k * log(beta) + lgamma[N + k + 1] - lgamma[N + 1] - lgamma[k + 1] - (N + k + 1) * log(lamb + beta));
+        lhs = lprob;
     }
 
-    return (lprob);
+    return (std::make_tuple(lprob, lhs));
 }
 
 
-// double max_error(const std::vector<double> &lgamma, double delta, double lamb, double beta, size_t N, size_t K)
-// {
-//     double max_error = -INFINITY;
-//     for (size_t k = 0; k <= K; k++)
-//     {
-//         double lprob = lprob_k_given_N(N, k, delta, lamb, beta, lgamma);
-//         if (lprob > max_error)
-//         {
-//             max_error = lprob;
-//         }
-//     }
-//     return max_error;
-// }
+double upper_bound_E(const std::vector<double> &lgamma, double delta, double lamb, double beta, size_t N)
+{
+
+    double diff;
+
+    // ugly poisson cdf
+    double pois_cdf = -INFINITY;
+    for (size_t i = 0; i <= N; i++)
+    {
+        pois_cdf = logaddexpd(i * log(lamb * delta) - lgamma[i + 1], pois_cdf);
+    }
+
+    diff = exp(log(beta) + delta*lamb + log(N+1) - (log(lamb) + pois_cdf));
+
+    return (diff);
+}
 
 
-double expected_k(int N, double delta, double lamb, double beta, int max_k,
+double expected_k(int N, double delta, double lamb, double beta, double threshold_Ek,
                   const std::vector<double> &lgamma,
-                  std::unordered_map<std::tuple<int, int, double>, double> &kN_map)
+                  std::unordered_map<std::tuple<int, int, double>, std::tuple<double, double>> &kN_map)
 {
 
     double lprob = -INFINITY;
-    double lkN;
+    double elprob = -INFINITY;
+    double lkN, upper_bound, diff_bound;
+    int k;
     std::tuple<int, int, double> key;
 
-    for (int k = 1; k <= max_k; k++)
+
+    // Calculate expected value of E(K) to a given error margin.
+    k=1;
+    upper_bound = upper_bound_E(lgamma, delta, lamb, beta, N);
+    diff_bound = threshold_Ek+1;
+    while ((diff_bound > threshold_Ek) && (k<10000))
     {
+        // std::cout << exp(logsubexpd(upper_bound, lprob)) << " : " << k << std::endl;
+        if ((k%100)==0){
+        printf("upper_bound: %f\n", upper_bound);
+        printf("exp(lprob): %f\n", exp(lprob));
+        printf("exp(elprob): %f\n", exp(elprob));
+        printf("diff_bound: %f\n", diff_bound);
+        printf("k: %i, N: %i, delta: %f\n", k, N, delta);
+        }
+
         key = std::make_tuple(N, k, delta);
 
-        if (kN_map.count(key))
+        if (!kN_map.count(key))
         {
-            lkN = kN_map[key];
-        }
-        else
-        {
-            lkN = lprob_k_given_N(N, k, delta, lamb, beta, lgamma);
-            kN_map[key] = lkN;
+            kN_map[key] = lprob_k_given_N(N, k, delta, lamb, beta, lgamma);
         }
 
-        lprob = logaddexpd(lprob, lkN + log(k));
+        lprob = logaddexpd(lprob, std::get<0>(kN_map[key]) + log(k));
+        
+
+        // Find upper bound on E(K)
+        elprob = logaddexpd(elprob, std::get<1>(kN_map[key]) + log(k) + delta*(lamb+beta) - (N+k+1)*log(lamb+beta));
+        diff_bound = upper_bound - exp(elprob);
+
+        k++;
     }
 
     return (exp(lprob));
 }
 
 inline std::tuple<std::vector<double>, std::vector<double>>
-trans_dist(const std::vector<int> &snpdiff, const std::vector<double> &datediff, double lamb, double beta, size_t maxK=100)
+trans_dist(const std::vector<int> &snpdiff, const std::vector<double> &datediff, double lamb, double beta, double threshold_Ek=1e-6)
 {
 
     // chache results
     std::unordered_map<std::tuple<int, double>, double> eK_map;
-    std::unordered_map<std::tuple<int, int, double>, double> kN_map;
+    std::unordered_map<std::tuple<int, int, double>, std::tuple<double, double>> kN_map;
 
     // results vectors
     std::vector<double> eK(snpdiff.size());
@@ -178,7 +216,7 @@ trans_dist(const std::vector<int> &snpdiff, const std::vector<double> &datediff,
 
     std::tuple<int, double> key;
     std::tuple<int, int, double> keyB;
-
+    
     for (size_t i = 0; i < snpdiff.size(); i++)
     {
         key = std::make_tuple(snpdiff[i], datediff[i]);
@@ -188,20 +226,18 @@ trans_dist(const std::vector<int> &snpdiff, const std::vector<double> &datediff,
         }
         else
         {
-            eK[i] = expected_k(snpdiff[i], datediff[i], lamb, beta, maxK, lg, kN_map);
+            eK[i] = expected_k(snpdiff[i], datediff[i], lamb, beta, threshold_Ek, lg, kN_map);
             eK_map[key] = eK[i];
         }
 
         keyB = std::make_tuple(snpdiff[i], 0, datediff[i]);
-        if (kN_map.count(keyB))
+
+        if (!kN_map.count(keyB))
         {
-            p0[i] = kN_map[keyB];
+            kN_map[keyB] = lprob_k_given_N(snpdiff[i], 0, datediff[i], lamb, beta, lg);
         }
-        else
-        {
-            p0[i] = lprob_k_given_N(snpdiff[i], 0, datediff[i], lamb, beta, lg);
-            kN_map[keyB] = p0[i];
-        }
+        p0[i] = std::get<0>(kN_map[keyB]);
+
     }
 
     return std::make_tuple(p0, eK);

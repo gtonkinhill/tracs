@@ -9,7 +9,7 @@ from zipfile import ZipFile
 from tqdm import tqdm
 from joblib import Parallel, delayed
 
-from .utils import sketch_files
+from .utils import run_sketch
 
 
 def build_db_parser(parser):
@@ -76,14 +76,10 @@ def build_db_parser(parser):
 def build_sourmash_db(inputs, outputdir, ksize=51, scale=1000, n_cpu=1, quiet=False):
     temp_dir = os.path.join(tempfile.mkdtemp(dir=outputdir), "")
 
-    # sourmash index database
-    sourmash_params = "k=" + str(ksize) + ","
-    sourmash_params += "scaled=" + str(scale) + ","
-    sourmash_params += "noabund"
 
     # sketch_files(input_files, prefix, outputfile, sourmash_params)
     Parallel(n_jobs=n_cpu)(
-        delayed(sketch_files)([f], prefix, temp_dir + prefix + ".sig", sourmash_params)
+        delayed(run_sketch)([f], prefix, temp_dir + prefix + ".sig", ksize, scale)
         for f, prefix in tqdm(inputs, disable=quiet)
     )
 

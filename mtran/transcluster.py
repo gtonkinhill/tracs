@@ -26,7 +26,7 @@ def calculate_trans_prob(
     time_diff = np.abs(time_array[i] - time_array[j]) / SECONDS_IN_YEAR
 
     # calculate transmission distances
-    p0, eK = trans_dist(d, time_diff, lamb, beta)
+    p0, eK = trans_dist(d, time_diff, lamb, beta, 0.01)
 
     if not log:
         p0 = np.exp(p0)
