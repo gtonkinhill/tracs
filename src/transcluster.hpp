@@ -207,17 +207,15 @@ double expected_k(int N, double delta, double lamb, double beta, double threshol
     while ((diff_bound > threshold_Ek) && (k<10000))
     {
         // std::cout << exp(logsubexpd(upper_bound, lprob)) << " : " << k << std::endl;
-        if ((k%10)==0){
-        printf("upper_bound: %f\n", upper_bound);
-        printf("exp(lprob): %f\n", exp(lprob));
-        printf("exp(elprob): %f\n", exp(elprob));
-        printf("diff_bound: %f\n", diff_bound);
-        printf("k: %i, N: %i, delta: %f\n", k, N, delta);
-
-        printf("*****\nlprob_k_given_N: %f\n", std::get<0>(lprob_k_given_N(N, k, delta, lamb, beta, lgamma)));
-        printf("lprob_k_given_N_2: %f\n******\n", std::get<0>(lprob_k_given_N_2(N, k, delta, lamb, beta, lgamma)));
-
-        }
+        // if ((k%10)==0){
+        // printf("upper_bound: %f\n", upper_bound);
+        // printf("exp(lprob): %f\n", exp(lprob));
+        // printf("exp(elprob): %f\n", exp(elprob));
+        // printf("diff_bound: %f\n", diff_bound);
+        // printf("k: %i, N: %i, delta: %f\n", k, N, delta);
+        // printf("*****\nlprob_k_given_N: %f\n", std::get<0>(lprob_k_given_N(N, k, delta, lamb, beta, lgamma)));
+        // printf("lprob_k_given_N_2: %f\n******\n", std::get<0>(lprob_k_given_N_2(N, k, delta, lamb, beta, lgamma)));
+        // }
 
         key = std::make_tuple(N, k, delta);
 
