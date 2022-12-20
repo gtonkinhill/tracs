@@ -162,7 +162,7 @@ def main():
         '-b',
         "--background-distance",
         dest="background_distance",
-        help="The mean SNP distance of isolates not seperated by direct transmission",
+        help="The mean SNP distance of isolates not separated by direct transmission",
         type=int,
         required=True,
     )

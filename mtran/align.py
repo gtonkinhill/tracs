@@ -7,6 +7,7 @@ import gzip
 from zipfile import ZipFile
 import tempfile
 import numpy as np
+import pyfastx as fx
 
 from .utils import run_gather
 from .pileup import align_and_pileup
@@ -184,7 +185,7 @@ def align(args):
         "AGT": "D",
         "ACT": "H",
         "ACG": "V",
-        "ACGT": "N",
+        "ACGT": "N"
     }
 
     # get working directory and create temp directory
@@ -245,12 +246,18 @@ def align(args):
     # add empirical Bayes pseudocounts
     npos = {"A": 0, "C": 1, "G": 2, "T": 3}
     for ref in references:
-        all_counts = []
+
+        all_counts = {}
+        for name, seq in fx.Fasta(temp_dir + ref + ".fasta.gz", build_index=False):
+            all_counts[name] = np.zeros((len(seq), 4), dtype=float)
+
         with open(
             args.output_dir + args.prefix + "_ref_" + str(ref) + "_pileup.txt", "r"
         ) as infile:
             for i, line in enumerate(infile):
                 line = line.strip().split()
+                contig = line[0]
+                pos = int(line[1]) - 1
                 nucs = line[-2].split(",")
                 ncounts = line[-1].split(":")[1:3]
                 counts = np.zeros(4, dtype=float)
@@ -263,8 +270,8 @@ def align(args):
                         if (c1 == 0) or (c2 == 0):
                             c1 = c2 = 0
                     counts[npos[nuc]] = c1 + c2
-                all_counts.append(counts)
-        all_counts = np.asarray(all_counts)
+                all_counts[contig][pos,:] = counts
+        all_counts = np.concatenate(list(all_counts.values()))
         alphas = find_dirichlet_priors(all_counts)
         a0 = np.sum(alphas)
 
@@ -298,7 +305,7 @@ def align(args):
         ) as outfile:
             np.savetxt(
                 outfile,
-                all_counts.reshape((1, all_counts.size)),
+                all_counts,
                 delimiter=",",
                 newline="\n",
                 fmt="%0.5f",
@@ -306,6 +313,7 @@ def align(args):
             outfile.write(b"\n")
 
         # generate fasta output
+        print("shape: ", all_counts.shape)
         with open(
             args.output_dir
             + args.prefix
@@ -316,7 +324,8 @@ def align(args):
         ) as outfile:
             outfile.write(">" + args.prefix + "_" + str(ref) + "\n")
             for i in range(all_counts.shape[0]):
-                outfile.write(iupac_codes["".join(alleles[all_counts[i, :] > 0])])
+                outfile.write(iupac_codes["".join(alleles[all_counts[i, :] > args.expected_freq_threshold])])
+            outfile.write("\n")
 
     shutil.rmtree(temp_dir)
 

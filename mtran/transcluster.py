@@ -6,7 +6,7 @@ SECONDS_IN_YEAR = 31556952.0
 
 
 def calculate_trans_prob(
-    sparse_snp_dist, sample_dates, K, lamb, beta, samplenames=None, log=False
+    sparse_snp_dist, sample_dates, K, lamb, beta, samplenames=None, log=False, precision=0.01
 ):
     i = np.array(sparse_snp_dist[0])
     j = np.array(sparse_snp_dist[1])
@@ -26,7 +26,7 @@ def calculate_trans_prob(
     time_diff = np.abs(time_array[i] - time_array[j]) / SECONDS_IN_YEAR
 
     # calculate transmission distances
-    p0, eK = trans_dist(d, time_diff, lamb, beta, 0.01)
+    p0, eK = trans_dist(d, time_diff, lamb, beta, precision)
 
     if not log:
         p0 = np.exp(p0)

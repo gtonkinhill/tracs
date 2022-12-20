@@ -35,7 +35,7 @@ def distance_parser(parser):
     io_opts.add_argument(
         "--meta",
         dest="metadata",
-        required=True,
+        default=None,
         help="""Location of metadata in csv format. The first column must include the 
         sequence names and the second column must include sampling dates.""",
         type=os.path.abspath,
@@ -90,6 +90,16 @@ def distance_parser(parser):
         default=None,
     )
 
+    transdist.add_argument(
+        "--precision",
+        dest="precision",
+        help=(
+            "The precision used to calculate E(K) (default=0.01)."
+        ),
+        type=check_positive_float,
+        default=0.01,
+    )
+
     # Other options
     parser.add_argument(
         "-t",
@@ -119,12 +129,13 @@ def distance(args):
     if not args.quiet:
         print("Loading metadata...")
 
-    dates = {}
-    with open(args.metadata, "r") as infile:
-        next(infile)
-        for line in infile:
-            line = line.strip().split(",")
-            dates[line[0]] = (line[1], date.fromisoformat(line[1]))
+    if args.metadata is not None:
+        dates = {}
+        with open(args.metadata, "r") as infile:
+            next(infile)
+            for line in infile:
+                line = line.strip().split(",")
+                dates[line[0]] = (line[1], date.fromisoformat(line[1]))
 
     if not args.quiet:
         print("Estimating transmission distances...")
@@ -149,39 +160,61 @@ def distance(args):
             names = snp_dists[3]
 
             # Estimate transmission distances
-            if not args.quiet:
-                print("Inferring transmission probabilities for %s" % msa)
-            transmission_dists, expectedk, datediff = calculate_trans_prob(
-                snp_dists[:3],
-                sample_dates=dates,
-                K=100,
-                lamb=args.clock_rate,
-                beta=args.trans_rate,
-                samplenames=snp_dists[3],
-                log=False,
-            )
+            if args.metadata is not None:
+                if not args.quiet:
+                    print("Inferring transmission probabilities for %s" % msa)
+                transmission_dists, expectedk, datediff = calculate_trans_prob(
+                    snp_dists[:3],
+                    sample_dates=dates,
+                    K=100,
+                    lamb=args.clock_rate,
+                    beta=args.trans_rate,
+                    samplenames=snp_dists[3],
+                    log=False,
+                    precision=args.precision
+                )
 
             # Write output
             if not args.quiet:
                 print("Saving distances for %s" % msa)
-            for i, j, dateD, snpD, expK, tranD in zip(
-                snp_dists[0],
-                snp_dists[1],
-                datediff,
-                snp_dists[2],
-                expectedk,
-                transmission_dists,
-            ):
-                if (args.trans_threshold is None) or (args.trans_threshold >= expK):
+            if args.metadata is not None:
+                for i, j, dateD, snpD, expK, tranD in zip(
+                    snp_dists[0],
+                    snp_dists[1],
+                    datediff,
+                    snp_dists[2],
+                    expectedk,
+                    transmission_dists,
+                ):
+                    if (args.trans_threshold is None) or (args.trans_threshold >= expK):
+                        outfile.write(
+                            ",".join(
+                                [
+                                    names[i],
+                                    names[j],
+                                    str(dateD),
+                                    str(int(snpD)),
+                                    str(tranD),
+                                    str(expK),
+                                ]
+                            )
+                            + "\n"
+                        )
+            else:
+                for i, j, snpD in zip(
+                    snp_dists[0],
+                    snp_dists[1],
+                    snp_dists[2]
+                ):
                     outfile.write(
                         ",".join(
                             [
                                 names[i],
                                 names[j],
-                                str(dateD),
+                                "NA",
                                 str(int(snpD)),
-                                str(tranD),
-                                str(expK),
+                                "NA",
+                                "NA",
                             ]
                         )
                         + "\n"

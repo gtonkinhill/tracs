@@ -66,7 +66,10 @@ def run_gather(
         next(infile)
         for line in infile:
             line = line.strip().split(',')
-            references.append(line[9])
+            print(line)
+            references.append(line[8])
+
+    print("references: ", references)
 
     return references
 

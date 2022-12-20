@@ -53,7 +53,8 @@ def align_and_pileup(
     subprocess.run(cmd, shell=True, check=True)
 
     # run pileup
-    cmd = "htsbox pileup -C "
+    cmd = "htsbox pileup -C -s 0"
+    cmd += ' -f ' + reference
     cmd += ' -Q ' + str(Q)
     cmd += ' -q ' + str(q)
     cmd += ' -l ' + str(l)
