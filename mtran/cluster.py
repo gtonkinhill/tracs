@@ -62,7 +62,8 @@ def cluster_parser(parser):
         help="The type of transmission distance to use. Can be one of 'SNP', 'direct', 'expectedK'",
         choices=["SNP", "direct", "expectedK"],
         type=str,
-        required=True,
+        default='SNP',
+        required=True
     )
 
     # Other options
