@@ -1,8 +1,10 @@
 import os
 import sys
 import argparse
-
 import subprocess
+import random
+import gzip
+import pyfastx as fx
 
 
 def run_sketch(
@@ -88,3 +90,20 @@ def check_positive_float(value):
             "%s is an invalid positive float value" % value
         )
     return ivalue
+
+def generate_reads(fasta, outputfile, coverage=10, read_length=300):
+    with gzip.open(outputfile, 'wt') as outfile:
+        for seq in fx.Fasta(fasta):
+            seq_length = len(seq)
+            forward = str(seq.seq)
+            reverse = str(seq.antisense)
+            nreads = max(coverage+10, int((seq_length/read_length) * coverage + 1))
+            for i in range(nreads):
+                start = random.randint(0, max(0, seq_length - read_length))
+                if i%2==0:
+                    r = forward[start:(start+read_length)]
+                else:
+                    r = reverse[start:(start+read_length)]
+                outfile.write(f">{seq.name}_read{i}\n{r}\n")
+           
+    return

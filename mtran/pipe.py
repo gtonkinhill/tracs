@@ -256,9 +256,9 @@ def pipe(args):
             else:
                 prefixes.add(line[0])
             if not os.path.isfile(line[1]):
-                raise ValueError("Path does not exist or is not a file! " + line[0])
-            if (len(line)>2) and not os.path.isfile(line[2]):
                 raise ValueError("Path does not exist or is not a file! " + line[1])
+            if (len(line)>2) and not os.path.isfile(line[2]):
+                raise ValueError("Path does not exist or is not a file! " + line[2])
 
     # generate alignments
     with open(args.input_file, 'r') as infile:

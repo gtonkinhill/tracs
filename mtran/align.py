@@ -9,7 +9,7 @@ import tempfile
 import numpy as np
 import pyfastx as fx
 
-from .utils import run_gather
+from .utils import run_gather, generate_reads
 from .pileup import align_and_pileup
 from .dirichlet_multinomial import find_dirichlet_priors
 from MTRAN import calculate_posteriors
@@ -215,7 +215,13 @@ def align(args):
 
     # retrieve references and perform alignment
     if len(args.input_files) == 1:
-        r1 = args.input_files[0]
+        print(os.path.splitext(args.input_files[0])[1])
+        if os.path.splitext(args.input_files[0])[1] in ['.fasta','.fa']:
+            # shred fasta to enable alignment step
+            r1 = temp_dir + "simulated_" + os.path.basename(args.input_files[0]) + '.gz'
+            generate_reads(args.input_files[0], r1)
+        else:
+            r1 = args.input_files[0]
         r2 = None
     elif len(args.input_files) == 2:
         r1 = args.input_files[0]
@@ -312,8 +318,7 @@ def align(args):
             )
             outfile.write(b"\n")
 
-        # generate fasta output
-        print("shape: ", all_counts.shape)
+        # generate fasta outputs
         with open(
             args.output_dir
             + args.prefix
