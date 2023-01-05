@@ -16,6 +16,7 @@ from .pileup import align_and_pileup
 from .dirichlet_multinomial import find_dirichlet_priors
 from MTRAN import calculate_posteriors
 
+from collections import Counter
 
 def align_parser(parser):
 
@@ -281,25 +282,25 @@ def align(args):
         r1 = args.input_files[0]
         r2 = args.input_files[1]
 
-    # for ref in references:
-    #     # print(ref_locs[ref])
-    #     align_and_pileup(
-    #         ref_locs[ref],
-    #         temp_dir,
-    #         args.output_dir + args.prefix + "_ref_" + str(ref),
-    #         r1,
-    #         r2=r2,
-    #         aligner="minimap2",
-    #         minimap_preset=args.minimap_preset,
-    #         minimap_params=None,
-    #         Q = args.min_base_qual, #minimum base quality
-    #         q = args.min_map_qual, #minimum mapping quality
-    #         l = args.min_query_len, #minimum query length
-    #         V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
-    #         T = args.trim, #ignore bases within INT-bp from either end of a read [0]
-    #         n_cpu=args.n_cpu,
-    #         quiet=args.quiet,
-    #     )
+    for ref in references:
+        # print(ref_locs[ref])
+        align_and_pileup(
+            ref_locs[ref],
+            temp_dir,
+            args.output_dir + args.prefix + "_ref_" + str(ref),
+            r1,
+            r2=r2,
+            aligner="minimap2",
+            minimap_preset=args.minimap_preset,
+            minimap_params=None,
+            Q = args.min_base_qual, #minimum base quality
+            q = args.min_map_qual, #minimum mapping quality
+            l = args.min_query_len, #minimum query length
+            V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
+            T = args.trim, #ignore bases within INT-bp from either end of a read [0]
+            n_cpu=args.n_cpu,
+            quiet=args.quiet,
+        )
 
     # add empirical Bayes pseudocounts
     npos = {"A": 0, "C": 1, "G": 2, "T": 3}
@@ -373,6 +374,7 @@ def align(args):
             outfile.write(b"\n")
 
         # generate fasta outputs
+        testcount = Counter()
         with open(
             args.output_dir
             + args.prefix
@@ -383,8 +385,12 @@ def align(args):
         ) as outfile:
             outfile.write(">" + args.prefix + "_" + str(ref) + "\n")
             for i in range(all_counts.shape[0]):
-                outfile.write(iupac_codes["".join(alleles[all_counts[i, :] >= args.expected_freq_threshold])])
+                t = iupac_codes["".join(alleles[all_counts[i, :] > 0])]
+                testcount[t] += 1
+                outfile.write(t)
             outfile.write("\n")
+
+        print("testcount: ", testcount)
 
     shutil.rmtree(temp_dir)
 

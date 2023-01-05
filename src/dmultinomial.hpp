@@ -68,9 +68,9 @@ py::array_t<double> calculate_posteriors(py::array_t<double> counts, std::vector
         // keep alleles even if the posterior is below the threshold else set to 0.
         for (size_t j = 0; j < buf1.shape[1]; j++)
         {
-            if ((ptr_result[i * buf1.shape[1] + j] < expected) && (ptr_result[i * buf1.shape[1] + j] > 0))
+            if ((ptr_result[i * buf1.shape[1] + j] < expected))
             {
-                if (keep)
+                if (keep && (row[j] > 0))
                 {
                     ptr_result[i * buf1.shape[1] + j] = expected;
                 }
