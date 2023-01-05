@@ -8,6 +8,8 @@ from zipfile import ZipFile
 import tempfile
 import numpy as np
 import pyfastx as fx
+import ncbi_genome_download as ngd
+import glob
 
 from .utils import run_gather, generate_reads
 from .pileup import align_and_pileup
@@ -166,6 +168,32 @@ def align_parser(parser):
 
     return parser
 
+def download_ref(ref, outputdir):
+
+    r = ngd.download(groups='bacteria',
+                    section='genbank',
+                    file_formats='fasta',
+                    flat_output=True,
+                    output=outputdir,
+                    assembly_accessions=ref
+                    )
+    if r!=0:
+        # try refseq
+        r = ngd.download(groups='bacteria',
+                    section='refseq',
+                    file_formats='fasta',
+                    flat_output=True,
+                    output=outputdir,
+                    assembly_accessions=ref
+                    )
+    
+    if r!=0:
+        raise ValueError("Could not download reference for: ", ref)
+
+    refpath = glob.glob(outputdir + '*fna.gz')[0]
+
+    return refpath
+
 
 def align(args):
 
@@ -202,16 +230,42 @@ def align(args):
         args.prefix = os.path.splitext(os.path.basename(args.input_files[0]))[0]
 
     # retrieve sourmash database from zipfile
-    with ZipFile(args.database, "r") as archive:
-        archive.extract("sourmashDB.sbt.zip", temp_dir)
+    if ".sbt.zip" in args.database:
+        smdb = args.database
+    else:
+        with ZipFile(args.database, "r") as archive:
+            archive.extract("sourmashDB.sbt.zip", temp_dir)
+            smdb = temp_dir + "sourmashDB.sbt.zip"
 
     # run soursmash 'gather' method
     references = run_gather(
         input_files=args.input_files,
-        databasefile=temp_dir + "sourmashDB.sbt.zip",
+        databasefile=smdb,
         output=args.output_dir + args.prefix + "_sourmash_hits",
         temp_dir=temp_dir,
     )
+
+    ref_locs = {}
+    if ".sbt.zip" in args.database:
+        print('No references provided. Tracm will attempt to download references from Genbank')
+        if not os.path.exists(args.output_dir + 'genbank_references'):
+            os.mkdir(args.output_dir + 'genbank_references')
+
+        # attempt to download references
+        references = [r.split()[0].strip('"') for r in references]
+        print(references)
+        for ref in references:
+            temprefdir = args.output_dir + 'genbank_references/' + ref + '/'
+            if not os.path.exists(temprefdir):
+                os.mkdir(temprefdir)
+                ref_locs[ref] = download_ref(ref, temprefdir)
+            else:
+                ref_locs[ref] = glob.glob(temprefdir + '*.fna.gz')[0]
+    else:
+        with ZipFile(args.database, "r") as archive:
+            for ref in references:
+                archive.extract(ref + ".fasta.gz", temp_dir)
+                ref_locs[ref] = temp_dir + ref + ".fasta.gz"
 
     # retrieve references and perform alignment
     if len(args.input_files) == 1:
@@ -227,34 +281,32 @@ def align(args):
         r1 = args.input_files[0]
         r2 = args.input_files[1]
 
-    with ZipFile(args.database, "r") as archive:
-        print(references)
-        for ref in references:
-            archive.extract(ref + ".fasta.gz", temp_dir)
-            align_and_pileup(
-                temp_dir + ref + ".fasta.gz",
-                temp_dir,
-                args.output_dir + args.prefix + "_ref_" + str(ref),
-                r1,
-                r2=r2,
-                aligner="minimap2",
-                minimap_preset=args.minimap_preset,
-                minimap_params=None,
-                Q = args.min_base_qual, #minimum base quality
-                q = args.min_map_qual, #minimum mapping quality
-                l = args.min_query_len, #minimum query length
-                V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
-                T = args.trim, #ignore bases within INT-bp from either end of a read [0]
-                n_cpu=args.n_cpu,
-                quiet=args.quiet,
-            )
+    # for ref in references:
+    #     # print(ref_locs[ref])
+    #     align_and_pileup(
+    #         ref_locs[ref],
+    #         temp_dir,
+    #         args.output_dir + args.prefix + "_ref_" + str(ref),
+    #         r1,
+    #         r2=r2,
+    #         aligner="minimap2",
+    #         minimap_preset=args.minimap_preset,
+    #         minimap_params=None,
+    #         Q = args.min_base_qual, #minimum base quality
+    #         q = args.min_map_qual, #minimum mapping quality
+    #         l = args.min_query_len, #minimum query length
+    #         V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
+    #         T = args.trim, #ignore bases within INT-bp from either end of a read [0]
+    #         n_cpu=args.n_cpu,
+    #         quiet=args.quiet,
+    #     )
 
     # add empirical Bayes pseudocounts
     npos = {"A": 0, "C": 1, "G": 2, "T": 3}
     for ref in references:
 
         all_counts = {}
-        for name, seq in fx.Fasta(temp_dir + ref + ".fasta.gz", build_index=False):
+        for name, seq in fx.Fasta(ref_locs[ref], build_index=False):
             all_counts[name] = np.zeros((len(seq), 4), dtype=float)
 
         with open(
@@ -265,11 +317,13 @@ def align(args):
                 contig = line[0]
                 pos = int(line[1]) - 1
                 nucs = line[-2].split(",")
-                ncounts = line[-1].split(":")[1:3]
+                ncounts = line[-1].split(":")[1:]
                 counts = np.zeros(4, dtype=float)
                 for nuc, c1, c2 in zip(
                     nucs, ncounts[0].split(","), ncounts[1].split(",")
                 ):
+                    c1 = int(c1)
+                    c2 = int(c2)
                     if nuc not in npos:
                         continue
                     if args.require_both_strands:
@@ -278,11 +332,11 @@ def align(args):
                     counts[npos[nuc]] = c1 + c2
                 all_counts[contig][pos,:] = counts
         all_counts = np.concatenate(list(all_counts.values()))
-        alphas = find_dirichlet_priors(all_counts)
-        a0 = np.sum(alphas)
 
         if args.expected_freq_threshold is None:
-            args.expected_freq_threshold = alphas[1] / (np.sum(alphas) + 50)
+            args.expected_freq_threshold = max(1.0/np.mean(np.sum(all_counts, 1)), 0.01)
+
+        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=args.expected_freq_threshold)
 
         if not args.quiet:
             print("Calculating posterior frequency estimates...")
@@ -329,7 +383,7 @@ def align(args):
         ) as outfile:
             outfile.write(">" + args.prefix + "_" + str(ref) + "\n")
             for i in range(all_counts.shape[0]):
-                outfile.write(iupac_codes["".join(alleles[all_counts[i, :] > args.expected_freq_threshold])])
+                outfile.write(iupac_codes["".join(alleles[all_counts[i, :] >= args.expected_freq_threshold])])
             outfile.write("\n")
 
     shutil.rmtree(temp_dir)

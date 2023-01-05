@@ -252,7 +252,7 @@ def pipe(args):
         for line in infile:
             line = line.strip().split()
             if line[0] in prefixes:
-                raise
+                raise ValueError("Repeated file name! " + line[0])
             else:
                 prefixes.add(line[0])
             if not os.path.isfile(line[1]):

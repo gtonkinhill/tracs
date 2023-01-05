@@ -46,6 +46,7 @@ def generate_reads(genomes, depths, platform, prefix, outputdir, quiet=False):
     temp_dir = os.path.join(tempfile.mkdtemp(dir=outputdir), "")
 
     for genome, depth in zip(genomes, depths):
+        if depth<=0.01: continue
         temp_prefix = os.path.splitext(os.path.basename(genome))[0]
         if platform=='illumina':
             cmd = 'art_illumina'
@@ -101,6 +102,14 @@ def main():
         help="Input fasta files (one for each reference genome)",
         type=os.path.abspath,
         nargs="+",
+    )
+
+    io_opts.add_argument(
+        "-n",
+        dest="mean_genomes",
+        required=True,
+        help="Mean number of genomes per sample",
+        type=int
     )
 
     io_opts.add_argument(
@@ -194,19 +203,31 @@ def main():
     # make sure trailing forward slash is present
     args.output_dir = os.path.join(args.output_dir, "")
 
+    # sample genomes ensuring the transmitted genome is in both
+    tindex = args.fasta_files.index(args.tran_genome)
+    rindex = list(range(len(args.fasta_files)))
+    rindex.remove(tindex)
 
-    proportionsA = np.random.dirichlet([1] *len(args.fasta_files), size=1)[0]
+    ngenomesA = max(1, np.random.poisson(args.mean_genomes, size=1)[0])
+    ngenomesB = max(1, np.random.poisson(args.mean_genomes, size=1)[0])
+
+    genomesA = np.append(np.random.choice(np.array(rindex), ngenomesA-1), tindex)
+    genomesB = np.append(np.random.choice(np.array(rindex), ngenomesB-1), tindex)
+
+    proportionsA = np.random.dirichlet([1] * len(args.fasta_files), size=1)[0]
+    proportionsA[np.logical_not(np.in1d(range(len(args.fasta_files)), genomesA))] = 0
     proportionsA = proportionsA/np.sum(proportionsA)
 
     proportionsB = np.random.dirichlet([1] *len(args.fasta_files), size=1)[0]
+    proportionsB[np.logical_not(np.in1d(range(len(args.fasta_files)), genomesB))] = 0
     proportionsB = proportionsB/np.sum(proportionsB)
 
     sim = []
     distances = []
     for genome in args.fasta_files:
         if genome==args.tran_genome:
-            sim.append(generate_genome_pair(genome, args.distance, args.output_dir))
             distances.append(args.distance)
+            sim.append(generate_genome_pair(genome, args.distance, args.output_dir))
         else:
             d = np.random.poisson(args.background_distance, size=1)[0]
             distances.append(d)

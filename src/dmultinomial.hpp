@@ -70,7 +70,11 @@ py::array_t<double> calculate_posteriors(py::array_t<double> counts, std::vector
         {
             if ((ptr_result[i * buf1.shape[1] + j] < expected) && (ptr_result[i * buf1.shape[1] + j] > 0))
             {
-                if (!keep)
+                if (keep)
+                {
+                    ptr_result[i * buf1.shape[1] + j] = expected;
+                }
+                else
                 {
                     ptr_result[i * buf1.shape[1] + j] = 0.0;
                 }
