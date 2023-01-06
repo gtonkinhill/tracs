@@ -14,7 +14,7 @@ from .cluster import cluster
 
 def pipe_parser(parser):
 
-    parser.description = "A script to run the full mTran pipeline."
+    parser.description = "A script to run the full Tracm pipeline."
 
     io_opts = parser.add_argument_group("Input/output")
 

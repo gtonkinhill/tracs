@@ -14,7 +14,7 @@ import glob
 from .utils import run_gather, generate_reads
 from .pileup import align_and_pileup
 from .dirichlet_multinomial import find_dirichlet_priors
-from MTRAN import calculate_posteriors
+from TRACM import calculate_posteriors
 
 from collections import Counter
 

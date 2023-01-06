@@ -5,7 +5,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(MTRAN, m)
+PYBIND11_MODULE(TRACM, m)
 {
   m.doc() = "Meta Transmission Clustering";
 

@@ -14,7 +14,7 @@ from .utils import run_sketch
 
 def build_db_parser(parser):
 
-    parser.description = "Builds a database for mtran"
+    parser.description = "Builds a database for tracm"
 
     parser.add_argument(
         "-i",

@@ -4,7 +4,7 @@ import argparse
 from datetime import date
 import numpy as np
 
-from MTRAN import pairsnp
+from TRACM import pairsnp
 from .transcluster import calculate_trans_prob
 from .utils import check_positive_int, check_positive_float
 

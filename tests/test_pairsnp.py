@@ -1,4 +1,4 @@
-from MTRAN import pairsnp
+from TRACM import pairsnp
 
 def test_pairsnp(datafolder):
     # test the interface with the c++ version of pairsnp
