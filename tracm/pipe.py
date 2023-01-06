@@ -281,7 +281,8 @@ def pipe(args):
     
     alignments = []
     for ref in references:
-        combined_aln = outputdir + "combined_" + ref
+        if len(references[ref]<=1): continue
+        combined_aln = outputdir + "combined" + ref
         with open(combined_aln, 'w') as outfile:
             for aln in references[ref]:
                 outfile.write(open(aln, "r").read())

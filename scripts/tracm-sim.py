@@ -18,24 +18,30 @@ def generate_genome_pair(genome, distance, outputdir):
     prefix = os.path.splitext(os.path.basename(genome))[0]
     contigs = []
     l = 0
-    with open(outputdir + prefix + '_A.fasta', 'w') as outfile:
-        for name, seq in pyfastx.Fasta(genome, build_index=False):
-            seq = seq.upper().replace('N','')
-            outfile.write('>' + name + '\n' + seq + '\n')
-            l += len(seq)
+    sequences = []
+    for name, seq in pyfastx.Fasta(genome, build_index=False):
+        seq = seq.upper().replace('N','')
+        sequences.append((name, seq))
+        l += len(seq)
 
     # generate SNP positions
-    snp_locs = np.random.randint(l, size=distance)
+    snp_locs = np.random.choice(l, size=distance, replace=False)
 
     l = 0
-    with open(outputdir + prefix + '_B.fasta', 'w') as outfile:
-        for name, seq in pyfastx.Fasta(outputdir + prefix + '_A.fasta', build_index=False):
-            seq = list(seq)
-            temp_locs = snp_locs[(snp_locs>=l) & (snp_locs<(l + len(seq))) ]
-            for loc in temp_locs:
-                seq[loc - l] = random.sample(sample_nt[seq[loc - l]], 1)[0]
-            outfile.write('>' + name + '\n' + ''.join(seq) + '\n')
-            l += len(seq)
+    with open(outputdir + prefix + '_A.fasta', 'w') as outfile:
+        with open(outputdir + prefix + '_B.fasta', 'w') as outfile:
+            for name, seq in sequences:
+                seqA = list(seq)
+                seqB = list(seq)
+                temp_locs = snp_locs[(snp_locs>=l) & (snp_locs<(l + len(seq))) ]
+                for loc in temp_locs:
+                    if random.randint(0, 1)==0:
+                        seqA[loc - l] = random.sample(sample_nt[seqA[loc - l]], 1)[0]
+                    else:
+                        seqB[loc - l] = random.sample(sample_nt[seqB[loc - l]], 1)[0]
+                outfileA.write('>' + name + '\n' + ''.join(seqA) + '\n')
+                outfileB.write('>' + name + '\n' + ''.join(seqB) + '\n')
+                l += len(seq)
 
     return (outputdir + prefix + '_A.fasta', outputdir + prefix + '_B.fasta')
 
