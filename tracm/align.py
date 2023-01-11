@@ -132,19 +132,19 @@ def align_parser(parser):
     )
 
     posterior.add_argument(
-        "--both-strands",
+        "--either-strand",
         dest="require_both_strands",
-        help="turns on the requirement that a variant is supported by both strands",
+        help="turns off the requirement that a variant is supported by both strands",
         action="store_true",
-        default=False,
+        default=True,
     )
 
     posterior.add_argument(
-        "--filter-all",
+        "--keep-all",
         dest="keep_all",
         help="turns on filtering of variants with support below the posterior frequency threshold",
         action="store_false",
-        default=True,
+        default=False,
     )
 
     # Other options
@@ -282,25 +282,24 @@ def align(args):
         r1 = args.input_files[0]
         r2 = args.input_files[1]
 
-    for ref in references:
-        # print(ref_locs[ref])
-        align_and_pileup(
-            ref_locs[ref],
-            temp_dir,
-            args.output_dir + args.prefix + "_ref_" + str(ref),
-            r1,
-            r2=r2,
-            aligner="minimap2",
-            minimap_preset=args.minimap_preset,
-            minimap_params=None,
-            Q = args.min_base_qual, #minimum base quality
-            q = args.min_map_qual, #minimum mapping quality
-            l = args.min_query_len, #minimum query length
-            V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
-            T = args.trim, #ignore bases within INT-bp from either end of a read [0]
-            n_cpu=args.n_cpu,
-            quiet=args.quiet,
-        )
+    # print(ref_locs[ref])
+    align_and_pileup(
+        ref_locs,
+        temp_dir,
+        args.output_dir + args.prefix,
+        r1,
+        r2=r2,
+        aligner="minimap2",
+        minimap_preset=args.minimap_preset,
+        minimap_params=None,
+        Q = args.min_base_qual, #minimum base quality
+        q = args.min_map_qual, #minimum mapping quality
+        l = args.min_query_len, #minimum query length
+        V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
+        T = args.trim, #ignore bases within INT-bp from either end of a read [0]
+        n_cpu=args.n_cpu,
+        quiet=args.quiet,
+    )
 
     # add empirical Bayes pseudocounts
     npos = {"A": 0, "C": 1, "G": 2, "T": 3}
@@ -335,7 +334,9 @@ def align(args):
         all_counts = np.concatenate(list(all_counts.values()))
 
         if args.expected_freq_threshold is None:
-            args.expected_freq_threshold = max(1.0/np.mean(np.sum(all_counts, 1)), 0.01)
+            args.expected_freq_threshold = max(1.0/max(1.1, np.mean(np.sum(all_counts, 1))), 0.01)
+            if args.expected_freq_threshold >= 1:
+                raise ValueError("Error in automatic threshold calculation")
 
         alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=args.expected_freq_threshold)
 

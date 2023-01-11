@@ -1,10 +1,11 @@
 import os
 import subprocess
 import tempfile
+import pyfastx as fx
 
 
 def align_and_pileup(
-    reference,
+    references,
     outdir,
     prefix,
     r1,
@@ -20,11 +21,18 @@ def align_and_pileup(
     T = 0, #ignore bases within INT-bp from either end of a read [0]
     n_cpu=1,
     quiet=False,
+    lowdisk=False
 ):
 
     # load pileups generated using the bampileup function
     if not quiet:
         print("Generating alignment and pileup...")
+
+    # Build composite reference
+    with open(outdir + 'composite_reference.fasta', 'w') as outfile:
+        for ref in references:
+            for name, seq in fx.Fasta(references[ref], build_index=False):
+                outfile.write('>' + ref + '@' + name + '\n' + seq + '\n')
 
     # run aligner
     temp_file = tempfile.NamedTemporaryFile(delete=False, dir=outdir)
@@ -33,28 +41,38 @@ def align_and_pileup(
     if aligner == "minimap2":
         cmd = "minimap2"
         cmd += " -t " + str(n_cpu)
+        cmd += " -p 1 -N 10"
 
     if minimap_params is not None:
         cmd += " " + minimap_params
     else:
         cmd += " -ax " + minimap_preset
 
-    cmd += " " + reference
+    cmd += " " + outdir + 'composite_reference.fasta'
     cmd += " " + r1
 
     if r2 is not None:
         cmd += " " + r2
 
-    cmd += " | htsbox samview -S -b - | htsbox samsort - > " + temp_file.name
+    if lowdisk:
+        cmd += " | htsbox samview -S -b - | htsbox samsort - > " + temp_file.name
+    else:
+        cmd += " > " +  outdir + "read_aln.sam"
 
     if not quiet:
         print("running cmd: " + cmd)
 
     subprocess.run(cmd, shell=True, check=True)
 
+    if not lowdisk:
+        cmd = "htsbox samview -S -b " + outdir + "read_aln.sam | htsbox samsort - > " + temp_file.name
+        if not quiet:
+            print("running cmd: " + cmd)
+        subprocess.run(cmd, shell=True, check=True)
+
     # run pileup
     cmd = "htsbox pileup -C -s 0"
-    cmd += ' -f ' + reference
+    cmd += ' -f ' +  outdir + 'composite_reference.fasta'
     cmd += ' -Q ' + str(Q)
     cmd += ' -q ' + str(q)
     cmd += ' -l ' + str(l)
@@ -62,12 +80,21 @@ def align_and_pileup(
     cmd += ' -V ' + str(V)
     cmd += ' -T ' + str(T)
     cmd += ' ' + temp_file.name
-    cmd += " > " + prefix + "_pileup.txt"
+    cmd += " > " + outdir + "composite_pileup.txt"
 
     if not quiet:
         print("running cmd: " + cmd)
 
     subprocess.run(cmd, shell=True, check=True)
+
+    # split into references
+    for ref in references:
+        with open(prefix + "_ref_" + str(ref) + "_pileup.txt", 'w') as outfile:
+            with open(outdir + "composite_pileup.txt", 'r') as infile:
+                for line in infile:
+                    line = line.strip().split('@')
+                    if line[0]==ref:
+                        outfile.write("@".join(line[1:]) + '\n')
 
     # clean up
     os.remove(temp_file.name)

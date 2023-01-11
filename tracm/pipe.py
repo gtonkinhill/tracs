@@ -125,19 +125,19 @@ def pipe_parser(parser):
     )
 
     posterior.add_argument(
-        "--both-strands",
+        "--either-strand",
         dest="require_both_strands",
-        help="turns on the requirement that a variant is supported by both strands",
+        help="turns off the requirement that a variant is supported by both strands",
         action="store_true",
-        default=False,
+        default=True,
     )
 
     posterior.add_argument(
-        "--filter-all",
+        "--keep-all",
         dest="keep_all",
         help="turns on filtering of variants with support below the posterior frequency threshold",
         action="store_false",
-        default=True,
+        default=False,
     )
 
     # Distance options
@@ -275,13 +275,14 @@ def pipe(args):
     # concatenate alignments
     references = defaultdict(list)
     for prefix in prefixes:
+        # print(outputdir + prefix)
         for aln in glob.glob(outputdir + prefix + "/*.fasta"):
             ref = os.path.basename(aln).replace(prefix, '')
             references[ref].append(aln)
     
     alignments = []
     for ref in references:
-        if len(references[ref]<=1): continue
+        if len(references[ref])<=1: continue
         combined_aln = outputdir + "combined" + ref
         with open(combined_aln, 'w') as outfile:
             for aln in references[ref]:

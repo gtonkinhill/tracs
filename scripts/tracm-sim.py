@@ -28,8 +28,8 @@ def generate_genome_pair(genome, distance, outputdir):
     snp_locs = np.random.choice(l, size=distance, replace=False)
 
     l = 0
-    with open(outputdir + prefix + '_A.fasta', 'w') as outfile:
-        with open(outputdir + prefix + '_B.fasta', 'w') as outfile:
+    with open(outputdir + prefix + '_A.fasta', 'w') as outfileA:
+        with open(outputdir + prefix + '_B.fasta', 'w') as outfileB:
             for name, seq in sequences:
                 seqA = list(seq)
                 seqB = list(seq)

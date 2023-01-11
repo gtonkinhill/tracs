@@ -1,4 +1,4 @@
-from mtran.distance import main
+from tracm.distance import main
 
 import tempfile
 import os, sys

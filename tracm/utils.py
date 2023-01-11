@@ -37,6 +37,7 @@ def run_gather(
     scaled=10000,
     threshold_bp=50000,
     max_hits=99999,
+    reporting_threshold=100000,
     cache_size=0):
 
     # Hash query
@@ -53,6 +54,7 @@ def run_gather(
     cmd += " -o " + output + ".csv"
     cmd += " --threshold-bp " + str(threshold_bp)
     cmd += " --ignore-abundance"
+    cmd += " --threshold-bp " + str(reporting_threshold)
     cmd += " " + temp_dir + "query.sig"
     cmd += " " + databasefile
 
