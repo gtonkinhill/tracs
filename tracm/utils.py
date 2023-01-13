@@ -37,7 +37,7 @@ def run_gather(
     scaled=10000,
     threshold_bp=50000,
     max_hits=99999,
-    reporting_threshold=100000,
+    p_match=0.1,
     cache_size=0):
 
     # Hash query
@@ -54,7 +54,6 @@ def run_gather(
     cmd += " -o " + output + ".csv"
     cmd += " --threshold-bp " + str(threshold_bp)
     cmd += " --ignore-abundance"
-    cmd += " --threshold-bp " + str(reporting_threshold)
     cmd += " " + temp_dir + "query.sig"
     cmd += " " + databasefile
 
@@ -70,10 +69,9 @@ def run_gather(
         next(infile)
         for line in infile:
             line = line.strip().split(',')
-            print(line)
-            references.append(line[8])
-
-    print("references: ", references)
+            if float(line[2]) >= p_match:
+                print(f"Using reference: {line[8]}")
+                references.append(line[8])
 
     return references
 

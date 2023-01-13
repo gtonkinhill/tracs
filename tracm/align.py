@@ -119,16 +119,14 @@ def align_parser(parser):
     posterior = parser.add_argument_group("Posterior count estimates")
 
     posterior.add_argument(
-        "--threshold",
-        dest="expected_freq_threshold",
-        default=None,
+        "--min-cov",
+        dest="min_cov",
+        default=5,
         help=(
-            "Minimum posterior read frequency threshold."
-            + " The default is set that a variant at a "
-            + "location is discounted if it is not found "
-            + "with a coverage of ~100x"
+            "Minimum read coverage (default=5)."
+            + " Coverage is calcualted including the empirical Bayes prior."
         ),
-        type=float,
+        type=int,
     )
 
     posterior.add_argument(
@@ -333,25 +331,30 @@ def align(args):
                 all_counts[contig][pos,:] = counts
         all_counts = np.concatenate(list(all_counts.values()))
 
-        if args.expected_freq_threshold is None:
-            args.expected_freq_threshold = max(1.0/max(1.1, np.mean(np.sum(all_counts, 1))), 0.01)
-            if args.expected_freq_threshold >= 1:
-                raise ValueError("Error in automatic threshold calculation")
+        total_cov = np.sum(np.sum(all_counts>0, 1)>0)/all_counts.shape[0]
+        print("Fraction of genome with read coverage: ", total_cov)
+        if total_cov < 0.5:
+            print(f"Skipping reference: {ref} as less than 50% of the genome has read coverage.")
+            continue
 
-        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=args.expected_freq_threshold)
+        expected_freq_threshold = min(0.9, args.min_cov/max(1.0, np.mean(np.sum(all_counts, 1))))
+        if expected_freq_threshold >= 1:
+            raise ValueError("Error in automatic threshold calculation")
+
+        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=expected_freq_threshold)
 
         if not args.quiet:
             print("Calculating posterior frequency estimates...")
             print(
                 "Filtering sites with posterior estimates below frequency threshold:",
-                args.expected_freq_threshold,
+                expected_freq_threshold,
             )
             if args.keep_all:
                 print("Keeping all observed alleles")
 
         # Calculate posterior frequency estimates and filter out those below the threshold
         all_counts = calculate_posteriors(
-            all_counts, alphas, args.keep_all, args.expected_freq_threshold
+            all_counts, alphas, args.keep_all, expected_freq_threshold
         )
 
         # save allele counts to file

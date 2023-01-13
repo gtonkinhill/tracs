@@ -93,6 +93,7 @@ def cluster(args):
     I = []
     J = []
     indices = {}
+    count = 0
     with open(args.distance_file, "r") as infile:
         next(infile)
         for line in infile:
@@ -102,6 +103,11 @@ def cluster(args):
             if float(line[col_index]) <= args.threshold:
                 I.append(i)
                 J.append(j)
+            count += 1
+    
+    if count <= 0:
+        print("No distances available! Abandoning clustering.")
+        return
 
     # pull out names in order
     names = list(index_count.dict.keys())

@@ -112,16 +112,14 @@ def pipe_parser(parser):
     posterior = parser.add_argument_group("Posterior count estimates")
 
     posterior.add_argument(
-        "--freq_threshold",
-        dest="expected_freq_threshold",
-        default=None,
+        "--min-cov",
+        dest="min_cov",
+        default=5,
         help=(
-            "Minimum posterior read frequency threshold."
-            + " The default is set that a variant at a "
-            + "location is discounted if it is not found "
-            + "with a coverage of ~100x"
+            "Minimum read coverage (default=5)."
+            + " Coverage is calcualted including the empirical Bayes prior."
         ),
-        type=float,
+        type=int,
     )
 
     posterior.add_argument(
