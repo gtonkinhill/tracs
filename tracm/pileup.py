@@ -55,7 +55,7 @@ def align_and_pileup(
         cmd += " " + r2
 
     if lowdisk:
-        cmd += " | htsbox samview -S -b - | htsbox samsort - > " + temp_file.name
+        cmd += " | htsbox samview -S -b - | htsbox samsort -t " + str(n_cpu) + " - > " + temp_file.name
     else:
         cmd += " > " +  outdir + "read_aln.sam"
 
@@ -65,7 +65,7 @@ def align_and_pileup(
     subprocess.run(cmd, shell=True, check=True)
 
     if not lowdisk:
-        cmd = "htsbox samview -S -b " + outdir + "read_aln.sam | htsbox samsort - > " + temp_file.name
+        cmd = "htsbox samview -S -b " + outdir + "read_aln.sam | htsbox samsort -t " + str(n_cpu) + " - > " + temp_file.name
         if not quiet:
             print("running cmd: " + cmd)
         subprocess.run(cmd, shell=True, check=True)

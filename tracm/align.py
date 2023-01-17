@@ -196,24 +196,45 @@ def download_ref(ref, outputdir):
 
 def align(args):
 
-    alleles = np.array(["A", "C", "G", "T"])
-    iupac_codes = {
-        "A": "A",
-        "C": "C",
-        "G": "G",
-        "T": "T",
-        "AC": "M",
-        "AG": "R",
-        "AT": "W",
-        "CG": "S",
-        "CT": "Y",
-        "GT": "K",
-        "CGT": "B",
-        "AGT": "D",
-        "ACT": "H",
-        "ACG": "V",
-        "ACGT": "N"
-    }
+    # alleles = np.array(["A", "C", "G", "T"])
+    # iupac_codes = {
+    #     "A": "A",
+    #     "C": "C",
+    #     "G": "G",
+    #     "T": "T",
+    #     "AC": "M",
+    #     "AG": "R",
+    #     "AT": "W",
+    #     "CG": "S",
+    #     "CT": "Y",
+    #     "GT": "K",
+    #     "CGT": "B",
+    #     "AGT": "D",
+    #     "ACT": "H",
+    #     "ACG": "V",
+    #     "ACGT": "N"
+    # }
+
+    b = np.array([
+        [0,0,0,0], # X
+        [1,0,0,0], # A
+        [0,1,0,0], # C
+        [0,0,1,0], # G
+        [0,0,0,1], # T
+        [1,1,0,0], # AC
+        [1,0,1,0], # AG
+        [1,0,0,1], # AT
+        [0,1,1,0], # CG
+        [0,1,0,1], # CT
+        [0,0,1,1], # GT
+        [0,1,1,1], # CGT
+        [1,0,1,1], # AGT
+        [1,1,0,1], # ACT
+        [1,1,1,0], # ACG
+        [1,1,1,1]  # ACGT
+        ])
+    iupac_codes = np.chararray(b.shape[0])
+    iupac_codes[np.packbits(b, axis=1, bitorder='little').flatten()] = [b'X',b'A',b'C',b'G',b'T',b'M',b'R',b'W',b'S',b'Y',b'K',b'B',b'D',b'H',b'V',b'N']
 
     # get working directory and create temp directory
     # create directory if it isn't present already
@@ -341,7 +362,7 @@ def align(args):
         if expected_freq_threshold >= 1:
             raise ValueError("Error in automatic threshold calculation")
 
-        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=expected_freq_threshold)
+        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=None)
 
         if not args.quiet:
             print("Calculating posterior frequency estimates...")
@@ -378,7 +399,14 @@ def align(args):
             outfile.write(b"\n")
 
         # generate fasta outputs
-        testcount = Counter()
+        sequence = iupac_codes[np.packbits(all_counts>0, axis=1, bitorder='little').flatten()].tobytes().decode("utf-8")
+        allelecount = Counter(sequence)
+        print("allelecount: ", allelecount)
+
+        if sequence.count('N')/(float(len(sequence))) > 0.5:
+            print(f"Skipping reference: {ref} as greater than 50% of the genome has completely ambiguous (N) base calls!")
+            continue
+
         with open(
             args.output_dir
             + args.prefix
@@ -388,13 +416,7 @@ def align(args):
             "w",
         ) as outfile:
             outfile.write(">" + args.prefix + "_" + str(ref) + "\n")
-            for i in range(all_counts.shape[0]):
-                t = iupac_codes["".join(alleles[all_counts[i, :] > 0])]
-                testcount[t] += 1
-                outfile.write(t)
-            outfile.write("\n")
-
-        print("testcount: ", testcount)
+            outfile.write(sequence + "\n")
 
     shutil.rmtree(temp_dir)
 
