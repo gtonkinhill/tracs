@@ -114,9 +114,9 @@ def pipe_parser(parser):
     posterior.add_argument(
         "--min-cov",
         dest="min_cov",
-        default=5,
+        default=2,
         help=(
-            "Minimum read coverage (default=5)."
+            "Minimum read coverage (default=2)."
             + " Coverage is calcualted including the empirical Bayes prior."
         ),
         type=int,

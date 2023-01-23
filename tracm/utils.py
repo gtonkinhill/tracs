@@ -71,7 +71,7 @@ def run_gather(
             line = line.strip().split(',')
             if float(line[2]) >= p_match:
                 print(f"Using reference: {line[8]}")
-                references.append(line[8])
+                references.append(line[9])
 
     return references
 

@@ -12,7 +12,7 @@ import ncbi_genome_download as ngd
 import glob
 
 from .utils import run_gather, generate_reads
-from .pileup import align_and_pileup
+from .pileup import align_and_pileup, align_and_pileup_composite
 from .dirichlet_multinomial import find_dirichlet_priors
 from TRACM import calculate_posteriors
 
@@ -121,9 +121,9 @@ def align_parser(parser):
     posterior.add_argument(
         "--min-cov",
         dest="min_cov",
-        default=5,
+        default=2,
         help=(
-            "Minimum read coverage (default=5)."
+            "Minimum read coverage (default=2)."
             + " Coverage is calcualted including the empirical Bayes prior."
         ),
         type=int,
@@ -301,24 +301,45 @@ def align(args):
         r1 = args.input_files[0]
         r2 = args.input_files[1]
 
-    # print(ref_locs[ref])
-    align_and_pileup(
-        ref_locs,
-        temp_dir,
-        args.output_dir + args.prefix,
-        r1,
-        r2=r2,
-        aligner="minimap2",
-        minimap_preset=args.minimap_preset,
-        minimap_params=None,
-        Q = args.min_base_qual, #minimum base quality
-        q = args.min_map_qual, #minimum mapping quality
-        l = args.min_query_len, #minimum query length
-        V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
-        T = args.trim, #ignore bases within INT-bp from either end of a read [0]
-        n_cpu=args.n_cpu,
-        quiet=args.quiet,
-    )
+    composite=False
+    if composite:
+        align_and_pileup_composite(
+            ref_locs,
+            temp_dir,
+            args.output_dir + args.prefix,
+            r1,
+            r2=r2,
+            aligner="minimap2",
+            minimap_preset=args.minimap_preset,
+            minimap_params=None,
+            Q = args.min_base_qual, #minimum base quality
+            q = args.min_map_qual, #minimum mapping quality
+            l = args.min_query_len, #minimum query length
+            V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
+            T = args.trim, #ignore bases within INT-bp from either end of a read [0]
+            n_cpu=args.n_cpu,
+            quiet=args.quiet,
+        )
+    else:
+        for ref in references:
+            align_and_pileup(
+                ref_locs[ref],
+                temp_dir,
+                args.output_dir + args.prefix + "_ref_" + str(ref),
+                r1,
+                r2=r2,
+                aligner="minimap2",
+                minimap_preset=args.minimap_preset,
+                minimap_params=None,
+                Q = args.min_base_qual, #minimum base quality
+                q = args.min_map_qual, #minimum mapping quality
+                l = args.min_query_len, #minimum query length
+                V = 1, #ignore queries with per-base divergence >FLOAT [1]
+                T = args.trim, #ignore bases within INT-bp from either end of a read [0]
+                max_div=args.max_div,
+                n_cpu=args.n_cpu,
+                quiet=args.quiet,
+            )
 
     # add empirical Bayes pseudocounts
     npos = {"A": 0, "C": 1, "G": 2, "T": 3}
@@ -358,11 +379,13 @@ def align(args):
             print(f"Skipping reference: {ref} as less than 50% of the genome has read coverage.")
             continue
 
-        expected_freq_threshold = min(0.9, args.min_cov/max(1.0, np.mean(np.sum(all_counts, 1))))
-        if expected_freq_threshold >= 1:
-            raise ValueError("Error in automatic threshold calculation")
+        # expected_freq_threshold = min(0.9, args.min_cov/max(1.0, np.mean(np.sum(all_counts, 1))))
 
-        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=None)
+        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=0.01)
+
+        # expected_freq_threshold = alphas[1] / (np.sum(alphas) + np.quantile(np.sum(all_counts, 1), 0.25))
+        expected_freq_threshold = 0.01
+        print("Using frequency threshold: ", expected_freq_threshold)
 
         if not args.quiet:
             print("Calculating posterior frequency estimates...")

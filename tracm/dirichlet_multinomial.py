@@ -18,11 +18,10 @@ def find_dirichlet_priors(counts, max_iter=1000, tol=1e-5, method="FPI", error_f
     # i.e. if there are multiple strains the combined frequencies will
     # always appear in the same order.
     nz = np.count_nonzero(data, 1)
-    # if np.sum(nz>2) >= 100:
-    #     keep_rows_thresh = 2
-    # el
     
-    if np.sum(nz>1) > 5:
+    if np.sum(nz>2) > 500:
+        keep_rows_thresh = 2
+    elif np.sum(nz>1) > 5:
         keep_rows_thresh = 1
     else:
         return(np.array([0,0,0,1.0]))
