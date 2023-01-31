@@ -61,17 +61,29 @@ def run_gather(
     print(f"command: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
 
-
     # Process results
     references = []
+    potential = []
     with open(output + ".csv", "r") as infile:
         # outfile.write("query,reference,f_unique_to_query,f_match_orig\n")
         next(infile)
         for line in infile:
             line = line.strip().split(',')
-            if float(line[2]) >= p_match:
-                print(f"Using reference: {line[8]}")
-                references.append(line[9])
+            line[2] = float(line[2])
+            line[0] = float(line[0])
+            potential.append(line)
+    
+    potential = sorted(potential, reverse=True)
+
+    prev=True
+    pcov = potential[0][0]
+    for line in potential:
+        if (line[2] >= p_match) or (prev and (line[0]/pcov >= 0.98)):
+            print(f"Using reference: {line[8]}")
+            references.append(line[9])
+        else:
+            prev=False
+        pcov = line[0]
 
     return references
 

@@ -114,12 +114,23 @@ def pipe_parser(parser):
     posterior.add_argument(
         "--min-cov",
         dest="min_cov",
-        default=2,
+        default=1,
         help=(
-            "Minimum read coverage (default=2)."
+            "Minimum read coverage (default=1)."
             + " Coverage is calcualted including the empirical Bayes prior."
         ),
         type=int,
+    )
+
+    posterior.add_argument(
+        "--error-perc",
+        dest="error_threshold",
+        default=0.01,
+        help=(
+            "Threshold to exclude likely erroneous variants prior to"
+            + " fitting Dirichlet multinomial model"
+        ),
+        type=float,
     )
 
     posterior.add_argument(
@@ -127,14 +138,14 @@ def pipe_parser(parser):
         dest="require_both_strands",
         help="turns off the requirement that a variant is supported by both strands",
         action="store_true",
-        default=True,
+        default=False,
     )
 
     posterior.add_argument(
         "--keep-all",
         dest="keep_all",
         help="turns on filtering of variants with support below the posterior frequency threshold",
-        action="store_false",
+        action="store_true",
         default=False,
     )
 

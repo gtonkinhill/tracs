@@ -240,14 +240,14 @@ def main():
             sim.append(generate_genome_pair(genome, d, args.output_dir))
 
     # generate reads for sample A
-    generate_reads([x[0] for x in sim], 
+    generate_reads(args.fasta_files, 
                     depths = proportionsA*args.depth, 
                     platform = args.platform, 
                     prefix = args.prefix + '_A', 
                     outputdir = args.output_dir, 
                     quiet = args.quiet)
 
-    # generate reads for sample B
+    # # generate reads for sample B
     generate_reads([x[1] for x in sim], 
                     depths = proportionsB*args.depth, 
                     platform = args.platform, 

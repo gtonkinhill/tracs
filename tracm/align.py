@@ -121,12 +121,23 @@ def align_parser(parser):
     posterior.add_argument(
         "--min-cov",
         dest="min_cov",
-        default=2,
+        default=1,
         help=(
-            "Minimum read coverage (default=2)."
+            "Minimum read coverage (default=1)."
             + " Coverage is calcualted including the empirical Bayes prior."
         ),
         type=int,
+    )
+
+    posterior.add_argument(
+        "--error-perc",
+        dest="error_threshold",
+        default=0.01,
+        help=(
+            "Threshold to exclude likely erroneous variants prior to"
+            + " fitting Dirichlet multinomial model"
+        ),
+        type=float,
     )
 
     posterior.add_argument(
@@ -134,14 +145,14 @@ def align_parser(parser):
         dest="require_both_strands",
         help="turns off the requirement that a variant is supported by both strands",
         action="store_true",
-        default=True,
+        default=False,
     )
 
     posterior.add_argument(
         "--keep-all",
         dest="keep_all",
         help="turns on filtering of variants with support below the posterior frequency threshold",
-        action="store_false",
+        action="store_true",
         default=False,
     )
 
@@ -244,6 +255,7 @@ def align(args):
     args.output_dir = os.path.join(args.output_dir, "")
     # Create temporary directory
     temp_dir = os.path.join(tempfile.mkdtemp(dir=args.output_dir), "")
+    # temp_dir = args.output_dir + "temp/"
 
     # set prefix to file name if not provided
     if args.prefix is None:
@@ -344,6 +356,7 @@ def align(args):
     # add empirical Bayes pseudocounts
     npos = {"A": 0, "C": 1, "G": 2, "T": 3}
     for ref in references:
+        print("Analysing reference: ", ref)
 
         all_counts = {}
         for name, seq in fx.Fasta(ref_locs[ref], build_index=False):
@@ -364,7 +377,7 @@ def align(args):
                 ):
                     c1 = int(c1)
                     c2 = int(c2)
-                    if nuc not in npos:
+                    if (nuc not in npos) or (line[2] not in npos):
                         continue
                     if args.require_both_strands:
                         if (c1 == 0) or (c2 == 0):
@@ -373,18 +386,37 @@ def align(args):
                 all_counts[contig][pos,:] = counts
         all_counts = np.concatenate(list(all_counts.values()))
 
-        total_cov = np.sum(np.sum(all_counts>0, 1)>0)/all_counts.shape[0]
+        # minimum coverage
+        rs = np.sum(all_counts, 1)
+        median_cov = np.median(np.sum(all_counts[rs>0,], 1))
+
+        total_cov = np.sum(rs>0)/all_counts.shape[0]
         print("Fraction of genome with read coverage: ", total_cov)
+        print("Median non-zero coverage: ", median_cov)
         if total_cov < 0.5:
             print(f"Skipping reference: {ref} as less than 50% of the genome has read coverage.")
             continue
 
-        # expected_freq_threshold = min(0.9, args.min_cov/max(1.0, np.mean(np.sum(all_counts, 1))))
+        # expected_freq_threshold = min(0.9, args.min_cov/max(1.0, np.mean(np.sum(all_counts, 1)))
 
-        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=0.01)
+        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=args.error_threshold)
 
-        # expected_freq_threshold = alphas[1] / (np.sum(alphas) + np.quantile(np.sum(all_counts, 1), 0.25))
-        expected_freq_threshold = 0.01
+        # calculate minimum frequency threshold
+        expected_freq_threshold = max(args.min_cov/median_cov, args.error_threshold)
+
+        if expected_freq_threshold <= alphas[1]/(median_cov + np.sum(alphas)):
+            expected_freq_threshold = alphas[1]/(median_cov + np.sum(alphas)) + 0.01
+            print("WARNING: Frequency threshold is set too low! The majority of the genome will be called as ambiguous.")
+            print("WARNING: The threshold has been automatically increased to:", expected_freq_threshold)
+        
+        # calculate coverage threshold to handle differences in gene presence and absence
+        cov_filter_threshold = 50
+        if (median_cov > cov_filter_threshold) and (alphas[1]/np.sum(alphas) > expected_freq_threshold):
+            bad_cov_lower_bound = alphas[1]/expected_freq_threshold - np.sum(alphas)
+            bad_cov_upper_bound = median_cov*(0.9)
+            print("Lower coverage bound: ", bad_cov_lower_bound)
+            print("Upper coverage bound: ", bad_cov_upper_bound)
+
         print("Using frequency threshold: ", expected_freq_threshold)
 
         if not args.quiet:
@@ -400,6 +432,9 @@ def align(args):
         all_counts = calculate_posteriors(
             all_counts, alphas, args.keep_all, expected_freq_threshold
         )
+
+        # normalise
+        # all_counts = all_counts/np.sum(all_counts, 1, keepdims=True)
 
         # save allele counts to file
         if not args.quiet:
@@ -420,6 +455,12 @@ def align(args):
                 fmt="%0.5f",
             )
             outfile.write(b"\n")
+
+        # apply coverage filter
+        if (median_cov > cov_filter_threshold) and (alphas[1]/np.sum(alphas) > expected_freq_threshold):
+            print("Fraction of genome filtered by coverage: ", np.sum((rs<bad_cov_upper_bound) & (rs>bad_cov_lower_bound))/len(rs))
+            if bad_cov_upper_bound > bad_cov_lower_bound:
+                all_counts[(rs<bad_cov_upper_bound) & (rs>bad_cov_lower_bound),] = 1
 
         # generate fasta outputs
         sequence = iupac_codes[np.packbits(all_counts>0, axis=1, bitorder='little').flatten()].tobytes().decode("utf-8")
