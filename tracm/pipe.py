@@ -5,6 +5,7 @@ import time
 import shutil
 import tempfile
 import glob
+import re
 from collections import defaultdict
 
 from .utils import run_gather, check_positive_int, check_positive_float
@@ -161,6 +162,14 @@ def pipe_parser(parser):
         default=2147483647,
     )
 
+    snpdist.add_argument(
+        "--filter",
+        dest="recomb_filter",
+        help="Filter out regions with unusually high SNP distances often caused by HGT",
+        action="store_true",
+        default=False
+    )
+
     transdist = parser.add_argument_group("Transmission distance options")
 
     transdist.add_argument(
@@ -284,9 +293,8 @@ def pipe(args):
     # concatenate alignments
     references = defaultdict(list)
     for prefix in prefixes:
-        # print(outputdir + prefix)
         for aln in glob.glob(outputdir + prefix + "/*.fasta"):
-            ref = os.path.basename(aln).replace(prefix, '')
+            ref = re.search(r"_ref_(.+?)\.fasta", aln).group(1)
             references[ref].append(aln)
     
     alignments = []

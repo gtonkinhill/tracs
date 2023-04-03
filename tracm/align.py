@@ -388,7 +388,17 @@ def align(args):
 
         # minimum coverage
         rs = np.sum(all_counts, 1)
+        nz_cov = np.sum(all_counts[rs>0,], 1)
+        median_cov = np.median(nz_cov)
+        print(rs)
+        print(all_counts)
+        print(np.sum(all_counts[rs>0,], 1))
+        print(nz_cov)
+        print(median_cov)
         median_cov = np.median(np.sum(all_counts[rs>0,], 1))
+        print(median_cov)
+        nz_quantiles = np.quantile(nz_cov, [0.25,0.75])
+        median_cov = np.median(nz_cov)
 
         total_cov = np.sum(rs>0)/all_counts.shape[0]
         print("Fraction of genome with read coverage: ", total_cov)
@@ -413,7 +423,7 @@ def align(args):
         cov_filter_threshold = 50
         if (median_cov > cov_filter_threshold) and (alphas[1]/np.sum(alphas) > expected_freq_threshold):
             bad_cov_lower_bound = alphas[1]/expected_freq_threshold - np.sum(alphas)
-            bad_cov_upper_bound = median_cov*(0.9)
+            bad_cov_upper_bound = nz_quantiles[1] - 1.5*(nz_quantiles[1]-nz_quantiles[0])# median_cov*(0.9)
             print("Lower coverage bound: ", bad_cov_lower_bound)
             print("Upper coverage bound: ", bad_cov_upper_bound)
 

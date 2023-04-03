@@ -61,6 +61,15 @@ def distance_parser(parser):
         default=2147483647,
     )
 
+    snpdist.add_argument(
+        "--filter",
+        dest="recomb_filter",
+        help="Filter out regions with unusually high SNP distances often caused by HGT",
+        type=bool,
+        action="store_true",
+        default=False
+    )
+
     transdist = parser.add_argument_group("Transmission distance options")
 
     transdist.add_argument(
@@ -142,7 +151,7 @@ def distance(args):
     
     with open(args.output_file, "w") as outfile:
         outfile.write(
-            "sampleA,sampleB,date difference,SNP distance,transmission distance,expected K\n"
+            "sampleA,sampleB,date difference,SNP distance,transmission distance,expected K,filtered SNP distance\n"
         )
         for msa in args.msa_files:
             # Estimate SNP distances
@@ -154,37 +163,51 @@ def distance(args):
             else:
                 msas = [msa]
             
-            snp_dists = pairsnp(
-                fasta=msas, n_threads=args.n_cpu, dist=args.snp_threshold
-            )
-            names = snp_dists[3]
+            snp_dists = list(pairsnp(
+                fasta=msas, n_threads=args.n_cpu, dist=args.snp_threshold, filter=args.recomb_filter
+            ))
+            names = snp_dists[3]                
 
             # Estimate transmission distances
             if args.metadata is not None:
                 if not args.quiet:
                     print("Inferring transmission probabilities for %s" % msa)
-                transmission_dists, expectedk, datediff = calculate_trans_prob(
-                    snp_dists[:3],
-                    sample_dates=dates,
-                    K=100,
-                    lamb=args.clock_rate,
-                    beta=args.trans_rate,
-                    samplenames=snp_dists[3],
-                    log=False,
-                    precision=args.precision
-                )
+                if args.recomb_filter:
+                    transmission_dists, expectedk, datediff = calculate_trans_prob(
+                        snp_dists[:2] + [snp_dists[4]],
+                        sample_dates=dates,
+                        K=100,
+                        lamb=args.clock_rate,
+                        beta=args.trans_rate,
+                        samplenames=snp_dists[3],
+                        log=False,
+                        precision=args.precision
+                    )
+                else:
+                    transmission_dists, expectedk, datediff = calculate_trans_prob(
+                        snp_dists[:3],
+                        sample_dates=dates,
+                        K=100,
+                        lamb=args.clock_rate,
+                        beta=args.trans_rate,
+                        samplenames=snp_dists[3],
+                        log=False,
+                        precision=args.precision
+                    )
+                    snp_dists[4] = ["NA"] * len(snp_dists[2])
 
             # Write output
             if not args.quiet:
                 print("Saving distances for %s" % msa)
             if args.metadata is not None:
-                for i, j, dateD, snpD, expK, tranD in zip(
+                for i, j, dateD, snpD, expK, tranD, filtD in zip(
                     snp_dists[0],
                     snp_dists[1],
                     datediff,
                     snp_dists[2],
                     expectedk,
                     transmission_dists,
+                    snp_dists[4]
                 ):
                     if (args.trans_threshold is None) or (args.trans_threshold >= expK):
                         outfile.write(
@@ -196,15 +219,17 @@ def distance(args):
                                     str(int(snpD)),
                                     str(tranD),
                                     str(expK),
+                                    str(filtD),
                                 ]
                             )
                             + "\n"
                         )
             else:
-                for i, j, snpD in zip(
+                for i, j, snpD, filtD in zip(
                     snp_dists[0],
                     snp_dists[1],
-                    snp_dists[2]
+                    snp_dists[2],
+                    snp_dists[4]
                 ):
                     outfile.write(
                         ",".join(
@@ -215,6 +240,7 @@ def distance(args):
                                 str(int(snpD)),
                                 "NA",
                                 "NA",
+                                str(filtD),
                             ]
                         )
                         + "\n"

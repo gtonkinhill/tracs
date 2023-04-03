@@ -10,7 +10,7 @@ PYBIND11_MODULE(TRACM, m)
   m.doc() = "Meta Transmission Clustering";
 
   m.def("pairsnp", &pairsnp, py::return_value_policy::take_ownership,
-        "Run pairsnp", py::arg("fasta"), py::arg("n_threads"), py::arg("dist"));
+        "Run pairsnp", py::arg("fasta"), py::arg("n_threads"), py::arg("dist"), py::arg("filter"));
 
   m.def("lprob_k_given_N", &lprob_k_given_N, py::return_value_policy::take_ownership,
         "Probability of K intermediate hosts given N SNPs",

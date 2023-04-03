@@ -138,7 +138,7 @@ def main():
     cmd += " --midasdb_dir " + args.refDB
     cmd += " --site_ratio 100"
     cmd += " --genome_coverage 0.1"
-    cmd += " --genome_depth 1"
+    cmd += " --genome_depth 0.01"
     cmd += " --snv_type rare"
     cmd += " --site_prev 1"
     cmd += " --snp_pooled_method abundance"

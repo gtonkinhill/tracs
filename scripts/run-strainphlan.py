@@ -6,10 +6,6 @@ import glob
 import tempfile
 import shutil
 from collections import defaultdict, Counter
-
-import os
-import subprocess
-import tempfile
 import pyfastx as fx
 
 
@@ -133,8 +129,13 @@ def main():
     print("running cmd: " + cmd)
     subprocess.run(cmd, shell=True, check=True)
 
-    # identify species to pull out
-    specs = Counter()
+    # add additional marker files to trick strainphlan into running the MSA
+    shutil.copyfile(args.output_dir + "consensus_markers/A_metagenome.pkl", 
+                    args.output_dir + "consensus_markers/temp1_A_metagenome.pkl")
+    shutil.copyfile(args.output_dir + "consensus_markers/A_metagenome.pkl", 
+                    args.output_dir + "consensus_markers/temp2_A_metagenome.pkl")
+
+    
     species_name = {}
     for dirT in [dirA, dirB]:
         with open(dirT + "profiled_metagenome.txt", 'r') as inputfile:
@@ -142,16 +143,37 @@ def main():
                 if line[0]=="#": continue
                 spec = line.split()[0].split("|")[-1]
                 if "t__" in spec:
-                    specs[spec] += 1
                     species_name[spec] = line.split()[0].split("|")[-2]
-    
-    specs = [s for s in specs if specs[s]>1]
+
+    # identify species to pull out
+    emDB = glob.glob(args.refDB + "/*.pkl")[0]
+    dirPA = args.output_dir + "strainphlan_pa/"
+    if not os.path.exists(dirPA):
+        os.mkdir(dirPA)
+
+    cmd = "strainphlan"
+    cmd += " -s " + args.output_dir + "consensus_markers/*.pkl"
+    cmd += " -o " + dirPA
+    cmd += " --print_clades_only"
+    cmd += " -d " + emDB
+    cmd += " --marker_in_n_samples 1 --sample_with_n_markers 1"
+    print("running cmd: " + cmd)
+    subprocess.run(cmd, shell=True, check=True)
+
+    specs = []
+    with open(dirPA + "print_clades_only.tsv", 'r') as infile:
+        next(infile)
+        for line in infile:
+            if "t__SGB" in line:
+                specs.append(line.split()[0])
+
     print("specs:", specs)
-    
+
+    # extract markers
     dirMarkers = args.output_dir + "db_markers/"
     if not os.path.exists(dirMarkers):
         os.mkdir(dirMarkers)
-    emDB = glob.glob(args.refDB + "/*.pkl")[0]
+    
     for spec in specs:
         cmd = "extract_markers.py"
         cmd += " -c " + spec
@@ -159,12 +181,6 @@ def main():
         cmd += " -d " + emDB
         print("running cmd: " + cmd)
         subprocess.run(cmd, shell=True, check=True)
-
-    # add additional marker files to trick strainphlan into running the MSA
-    shutil.copyfile(args.output_dir + "consensus_markers/A_metagenome.pkl", 
-                    args.output_dir + "consensus_markers/temp1_A_metagenome.pkl")
-    shutil.copyfile(args.output_dir + "consensus_markers/A_metagenome.pkl", 
-                    args.output_dir + "consensus_markers/temp2_A_metagenome.pkl")
 
     # run strainphlan
     dirMA = args.output_dir + "strainphlan_output/"

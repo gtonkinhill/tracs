@@ -5,9 +5,12 @@
 #include <stdio.h>
 #include <string>
 #include <zlib.h>
+#include <map>
+
 #include "kseq.h"
 
 #include <boost/dynamic_bitset.hpp>
+#include <boost/math/distributions/binomial.hpp>
 
 template <typename T>
 std::vector<T> combine_vectors(const std::vector<std::vector<T>> &vec,
@@ -21,6 +24,25 @@ std::vector<T> combine_vectors(const std::vector<std::vector<T>> &vec,
     all_it += vec[i].size();
   }
   return all;
+}
+
+double cached_binomial_cdf(int n, double p, int k)
+{
+    static std::map<std::tuple<int, double, int>, double> cache;
+
+    auto key = std::make_tuple(n, p, k);
+
+    auto it = cache.find(key);
+    if (it != cache.end()) {
+        // Return cached value if it exists
+        return it->second;
+    } else {
+        // Calculate CDF and cache result
+        boost::math::binomial_distribution<> dist(n, p);
+        double cdf = boost::math::cdf(dist, k);
+        cache[key] = cdf;
+        return cdf;
+    }
 }
 
 KSEQ_INIT(gzFile, gzread)
@@ -176,9 +198,92 @@ std::pair<size_t, size_t> load_seqs(std::string fasta,
   return std::make_pair(count, seq_length);
 }
 
+
+std::pair<size_t, size_t>  range_count(const boost::dynamic_bitset<> &bit_set, size_t start, size_t end) {
+    if (start > end || end > bit_set.size()) {
+        throw std::out_of_range("Invalid range specified.");
+    }
+
+    size_t count = 0;
+    size_t pos = bit_set.find_first();
+    size_t left = 0;
+    size_t length;
+
+    while (pos != boost::dynamic_bitset<>::npos && pos < end) {
+        if (pos >= start) {
+            if (left == 0) {
+                left = pos;
+            }
+            count++;
+            length = pos-left+1;
+        }
+        pos = bit_set.find_next(pos);
+    }
+
+    return std::make_pair(length, count);
+}
+
+
+size_t filter_recomb(boost::dynamic_bitset<> res) {
+  // Invert to look at SNPs
+  res.flip();
+
+  // Determine window size
+  double d = static_cast<double>(res.count());
+  int aln_length = res.size();
+
+  double p = d / aln_length;
+  double p_value_threshold = 0.05 / d;
+
+  // Determine window size
+  int window_size_half = static_cast<int>(1.0 / p / 2.0 + 1);
+  window_size_half = std::min(window_size_half, 5000);
+  window_size_half = std::max(window_size_half, 50);
+
+  std::cout << "window_size_half: " << window_size_half << std::endl;
+
+  // Iterate through SNPs
+  size_t window_count;
+  size_t left, right;
+  double p_value;
+  size_t filtered_d = 0;
+
+  for (int i = res.find_first(); i != boost::dynamic_bitset<>::npos; i = res.find_next(i)) {
+    std::cout << i << std::endl;
+
+    left = std::max(0, i - window_size_half);
+    right = std::min(aln_length, i + window_size_half + 1);
+
+     
+    std::pair<size_t, size_t> window_count;
+    window_count = range_count(res, left, right);
+
+    std::cout << "window_count: " << window_count.second << std::endl;
+
+
+    if (window_count.second > 1){
+      p_value = 1.0 - cached_binomial_cdf(window_count.first, p, window_count.second);
+      // p_value = 1.0 - cached_binomial_cdf(right-left, p, window_count.second);
+
+      if (p_value >= p_value_threshold) {
+          filtered_d++;
+          std::cout << "p_value: " << p_value << std::endl;
+          std::cout << "kept!" << std::endl;
+      }
+    } else {
+      filtered_d++;
+    }
+
+  }
+
+  std::cout << "filtered_d: " << filtered_d << std::endl;
+  return filtered_d;
+}
+
 inline std::tuple<std::vector<uint64_t>, std::vector<uint64_t>,
-                  std::vector<double>, std::vector<std::string>>
-pairsnp(const std::vector<std::string> fastas, int n_threads, int dist)
+                  std::vector<uint64_t>, std::vector<std::string>, 
+                  std::vector<uint64_t>>
+pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool filter)
 {
 
   // open filename and initialise kseq
@@ -227,7 +332,8 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist)
   // Shared variables for openmp loop
   std::vector<std::vector<uint64_t>> rows(n_seqs);
   std::vector<std::vector<uint64_t>> cols(n_seqs);
-  std::vector<std::vector<double>> distances(n_seqs);
+  std::vector<std::vector<uint64_t>> distances(n_seqs);
+  std::vector<std::vector<uint64_t>> filt_distances(n_seqs);
   uint64_t len = 0;
   bool interrupt = false;
 
@@ -257,9 +363,12 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist)
 
         if (d <= dist)
         {
+          uint64_t fd = filter_recomb(res);
+
           rows[i].push_back(i);
           cols[i].push_back(j);
           distances[i].push_back(d);
+          filt_distances[i].push_back(fd);
         }
       }
 
@@ -280,9 +389,10 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist)
   // }
 
   // Combine the lists from each thread
-  std::vector<double> distances_all = combine_vectors(distances, len);
+  std::vector<uint64_t> distances_all = combine_vectors(distances, len);
+  std::vector<uint64_t> filt_distances_all = combine_vectors(filt_distances, len);
   std::vector<uint64_t> rows_all = combine_vectors(rows, len);
   std::vector<uint64_t> cols_all = combine_vectors(cols, len);
 
-  return std::make_tuple(rows_all, cols_all, distances_all, seq_names);
+  return std::make_tuple(rows_all, cols_all, distances_all, seq_names, filt_distances_all);
 }
