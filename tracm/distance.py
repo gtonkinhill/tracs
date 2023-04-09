@@ -65,7 +65,6 @@ def distance_parser(parser):
         "--filter",
         dest="recomb_filter",
         help="Filter out regions with unusually high SNP distances often caused by HGT",
-        type=bool,
         action="store_true",
         default=False
     )

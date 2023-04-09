@@ -7,6 +7,7 @@ import gzip
 from zipfile import ZipFile
 import tempfile
 import numpy as np
+from scipy.stats import norm, poisson
 import pyfastx as fx
 import ncbi_genome_download as ngd
 import glob
@@ -17,6 +18,43 @@ from .dirichlet_multinomial import find_dirichlet_priors
 from TRACM import calculate_posteriors
 
 from collections import Counter
+
+def hogg_estimator_of_skewness(data):
+    """
+    Calculate Hogg's estimator of skewness for the given data based on the definition provided.
+    
+    Parameters:
+    data (numpy.ndarray): An array of data points.
+
+    Returns:
+    float: Hogg's estimator of skewness for the input data.
+
+    Hogg's measure of skewness (1974, p. 918) is a ratio of the right tail length to the left tail length. 
+    The right tail length is estimated as U(0.05) – M25, where U(0.05) is the average of the largest 5% of 
+    the data and M25 is the 25% trimmed mean of the data. The left tail length is estimated as M25 – L(0.05), 
+    where L(0.05) is the average of the smallest 5% of the data. The Hogg estimator is
+    SkewH = (U(0.05) – M25) / (M25 - L(0.05))
+    """
+    n = len(data)
+
+    sorted_data = np.sort(data)
+    p_05 = int(n * 0.05)
+    
+    if p_05 == 0:
+        raise ValueError("Insufficient data points for Hogg's estimator of skewness calculation.")
+    
+    # Calculate the average of the largest and smallest 5% of the data
+    U_05 = np.mean(sorted_data[-p_05:])
+    L_05 = np.mean(sorted_data[:p_05])
+    
+    # Calculate the 25% trimmed mean of the data
+    trim_25 = int(n * 0.25)
+    M25 = np.mean(sorted_data[trim_25:-trim_25])
+    
+    # Calculate the Hogg's estimator of skewness
+    hogg_skewness = (U_05 - M25) / (M25 - L_05)
+
+    return hogg_skewness
 
 def align_parser(parser):
 
@@ -121,10 +159,9 @@ def align_parser(parser):
     posterior.add_argument(
         "--min-cov",
         dest="min_cov",
-        default=1,
+        default=5,
         help=(
-            "Minimum read coverage (default=1)."
-            + " Coverage is calcualted including the empirical Bayes prior."
+            "Minimum read coverage (default=5)."
         ),
         type=int,
     )
@@ -389,30 +426,28 @@ def align(args):
         # minimum coverage
         rs = np.sum(all_counts, 1)
         nz_cov = np.sum(all_counts[rs>0,], 1)
-        median_cov = np.median(nz_cov)
-        print(rs)
-        print(all_counts)
-        print(np.sum(all_counts[rs>0,], 1))
-        print(nz_cov)
-        print(median_cov)
-        median_cov = np.median(np.sum(all_counts[rs>0,], 1))
-        print(median_cov)
-        nz_quantiles = np.quantile(nz_cov, [0.25,0.75])
-        median_cov = np.median(nz_cov)
-
         total_cov = np.sum(rs>0)/all_counts.shape[0]
-        print("Fraction of genome with read coverage: ", total_cov)
-        print("Median non-zero coverage: ", median_cov)
-        if total_cov < 0.5:
-            print(f"Skipping reference: {ref} as less than 50% of the genome has read coverage.")
-            continue
-
-        # expected_freq_threshold = min(0.9, args.min_cov/max(1.0, np.mean(np.sum(all_counts, 1)))
-
-        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=args.error_threshold)
+        median_cov = np.median(nz_cov)
+        mean_cov = np.mean(nz_cov)
+        sd_cov = np.std(nz_cov)
 
         # calculate minimum frequency threshold
         expected_freq_threshold = max(args.min_cov/median_cov, args.error_threshold)
+        total_cov_min_threshold = np.sum(rs >= args.min_cov)/all_counts.shape[0]
+
+        print("Fraction of genome with read coverage: ", total_cov)
+        print("Fraction of genome with read coverage >= {}: {}".format(args.min_cov, total_cov_min_threshold))
+        print("Median non-zero coverage: ", median_cov)
+        # print("Mean non-zero coverage: ", mean_cov)
+        # print("Standard deviation non-zero coverage: ", sd_cov)
+        # print("MAD: ", np.median(np.abs(nz_cov - median_cov)))
+        # print("quantile: ", np.quantile(nz_cov, [0.025, 0.25, 0.75, 0.975]))
+        
+        if total_cov_min_threshold < 0.5:
+            print(f"Skipping reference: {ref} as less than 50% of the genome has sufficient read coverage.")
+            continue
+
+        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=args.error_threshold)
 
         if expected_freq_threshold <= alphas[1]/(median_cov + np.sum(alphas)):
             expected_freq_threshold = alphas[1]/(median_cov + np.sum(alphas)) + 0.01
@@ -423,9 +458,39 @@ def align(args):
         cov_filter_threshold = 50
         if (median_cov > cov_filter_threshold) and (alphas[1]/np.sum(alphas) > expected_freq_threshold):
             bad_cov_lower_bound = alphas[1]/expected_freq_threshold - np.sum(alphas)
-            bad_cov_upper_bound = nz_quantiles[1] - 1.5*(nz_quantiles[1]-nz_quantiles[0])# median_cov*(0.9)
-            print("Lower coverage bound: ", bad_cov_lower_bound)
-            print("Upper coverage bound: ", bad_cov_upper_bound)
+           
+            # bad_cov_upper_bound = norm.ppf(0.025, np.mean(nz_cov), np.std(nz_cov))
+            
+            # lq = np.quantile(np.log2(nz_cov), [0.25,0.75])
+            # bad_cov_upper_bound = np.power(2, lq[0] - 1.5*(lq[1]-lq[0]))
+
+            # lq = np.quantile(np.arcsinh(nz_cov), [0.25,0.75])
+            # bad_cov_upper_bound = np.sinh(lq[0] - 1.5*(lq[1]-lq[0]))
+
+            # lq = np.quantile(nz_cov, [0.25,0.75])
+            # bad_cov_upper_bound = lq[0] - 1.5*(lq[1]-lq[0])
+
+            lq = np.quantile(nz_cov, [0.25,0.5])
+            bad_cov_upper_bound = lq[0] - 1.5*(lq[1]-lq[0])
+            
+            # lmed = np.median(np.log(nz_cov))
+            # lmad = np.median(np.abs(np.log(nz_cov) -lmed ))
+            # bad_cov_upper_bound = np.exp(norm.ppf(0.025, lmed, lmad))
+
+            # lmed = np.median(nz_cov)
+            # lmad = np.median(np.abs(nz_cov -lmed ))
+            # bad_cov_upper_bound = norm.ppf(0.025, lmed, lmad)
+
+            # q = np.quantile(nz_cov, [0.25, 0.75])
+            # M = hogg_estimator_of_skewness(nz_cov)
+            # bad_cov_upper_bound = q[0]-np.exp(-4*M)*1.5*(q[1]-q[0])
+
+            # bad_cov_upper_bound = 0.9*median_cov 
+            
+            # bad_cov_upper_bound = poisson.ppf(0.025, np.mean(nz_cov))
+            if bad_cov_lower_bound < bad_cov_upper_bound:
+                print("Lower coverage bound: ", bad_cov_lower_bound)
+                print("Upper coverage bound: ", bad_cov_upper_bound)
 
         print("Using frequency threshold: ", expected_freq_threshold)
 
@@ -470,7 +535,8 @@ def align(args):
         if (median_cov > cov_filter_threshold) and (alphas[1]/np.sum(alphas) > expected_freq_threshold):
             print("Fraction of genome filtered by coverage: ", np.sum((rs<bad_cov_upper_bound) & (rs>bad_cov_lower_bound))/len(rs))
             if bad_cov_upper_bound > bad_cov_lower_bound:
-                all_counts[(rs<bad_cov_upper_bound) & (rs>bad_cov_lower_bound),] = 1
+                all_counts[(rs <= bad_cov_upper_bound) & (rs >= bad_cov_lower_bound),] = 1
+        all_counts[rs < args.min_cov,] = 1
 
         # generate fasta outputs
         sequence = iupac_codes[np.packbits(all_counts>0, axis=1, bitorder='little').flatten()].tobytes().decode("utf-8")

@@ -240,7 +240,7 @@ size_t filter_recomb(boost::dynamic_bitset<> res) {
   window_size_half = std::min(window_size_half, 5000);
   window_size_half = std::max(window_size_half, 50);
 
-  std::cout << "window_size_half: " << window_size_half << std::endl;
+  // std::cout << "window_size_half: " << window_size_half << std::endl;
 
   // Iterate through SNPs
   size_t window_count;
@@ -249,7 +249,7 @@ size_t filter_recomb(boost::dynamic_bitset<> res) {
   size_t filtered_d = 0;
 
   for (int i = res.find_first(); i != boost::dynamic_bitset<>::npos; i = res.find_next(i)) {
-    std::cout << i << std::endl;
+    // std::cout << i << std::endl;
 
     left = std::max(0, i - window_size_half);
     right = std::min(aln_length, i + window_size_half + 1);
@@ -258,7 +258,7 @@ size_t filter_recomb(boost::dynamic_bitset<> res) {
     std::pair<size_t, size_t> window_count;
     window_count = range_count(res, left, right);
 
-    std::cout << "window_count: " << window_count.second << std::endl;
+    // std::cout << "window_count: " << window_count.second << std::endl;
 
 
     if (window_count.second > 1){
@@ -267,8 +267,8 @@ size_t filter_recomb(boost::dynamic_bitset<> res) {
 
       if (p_value >= p_value_threshold) {
           filtered_d++;
-          std::cout << "p_value: " << p_value << std::endl;
-          std::cout << "kept!" << std::endl;
+          // std::cout << "p_value: " << p_value << std::endl;
+          // std::cout << "kept!" << std::endl;
       }
     } else {
       filtered_d++;
@@ -276,7 +276,7 @@ size_t filter_recomb(boost::dynamic_bitset<> res) {
 
   }
 
-  std::cout << "filtered_d: " << filtered_d << std::endl;
+  // std::cout << "filtered_d: " << filtered_d << std::endl;
   return filtered_d;
 }
 
@@ -363,12 +363,14 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool fil
 
         if (d <= dist)
         {
-          uint64_t fd = filter_recomb(res);
-
           rows[i].push_back(i);
           cols[i].push_back(j);
           distances[i].push_back(d);
-          filt_distances[i].push_back(fd);
+
+          if (filter){
+            uint64_t fd = filter_recomb(res);
+            filt_distances[i].push_back(fd);
+          }
         }
       }
 

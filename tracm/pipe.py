@@ -115,10 +115,9 @@ def pipe_parser(parser):
     posterior.add_argument(
         "--min-cov",
         dest="min_cov",
-        default=1,
+        default=5,
         help=(
-            "Minimum read coverage (default=1)."
-            + " Coverage is calcualted including the empirical Bayes prior."
+            "Minimum read coverage (default=5)."
         ),
         type=int,
     )
@@ -294,7 +293,9 @@ def pipe(args):
     references = defaultdict(list)
     for prefix in prefixes:
         for aln in glob.glob(outputdir + prefix + "/*.fasta"):
-            ref = re.search(r"_ref_(.+?)\.fasta", aln).group(1)
+            print(aln)
+            ref = re.search(r"posterior_counts_ref_(.+?)\.fasta", aln).group(1)
+            print(ref)
             references[ref].append(aln)
     
     alignments = []
