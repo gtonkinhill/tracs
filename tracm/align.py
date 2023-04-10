@@ -181,8 +181,8 @@ def align_parser(parser):
         "--either-strand",
         dest="require_both_strands",
         help="turns off the requirement that a variant is supported by both strands",
-        action="store_true",
-        default=False,
+        action="store_false",
+        default=True,
     )
 
     posterior.add_argument(
