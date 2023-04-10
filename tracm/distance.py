@@ -8,6 +8,7 @@ from TRACM import pairsnp
 from .transcluster import calculate_trans_prob
 from .utils import check_positive_int, check_positive_float
 
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 def distance_parser(parser):
 

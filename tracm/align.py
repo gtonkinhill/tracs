@@ -19,6 +19,9 @@ from TRACM import calculate_posteriors
 
 from collections import Counter
 
+
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
 def hogg_estimator_of_skewness(data):
     """
     Calculate Hogg's estimator of skewness for the given data based on the definition provided.
@@ -76,6 +79,14 @@ def align_parser(parser):
         "--database",
         dest="database",
         help="path to database signatures",
+        type=os.path.abspath,
+        default=None,
+    )
+
+    io_opts.add_argument(
+        "--refseqs",
+        dest="refseqs",
+        help="path to reference fasta files",
         type=os.path.abspath,
         default=None,
     )

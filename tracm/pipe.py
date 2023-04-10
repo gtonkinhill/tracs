@@ -13,6 +13,8 @@ from .align import align
 from .distance import distance
 from .cluster import cluster
 
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
 def pipe_parser(parser):
 
     parser.description = "A script to run the full Tracm pipeline."
