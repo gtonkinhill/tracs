@@ -454,8 +454,8 @@ def align(args):
         # print("MAD: ", np.median(np.abs(nz_cov - median_cov)))
         # print("quantile: ", np.quantile(nz_cov, [0.025, 0.25, 0.75, 0.975]))
         
-        if total_cov_min_threshold < 0.5:
-            print(f"Skipping reference: {ref} as less than 50% of the genome has sufficient read coverage.")
+        if total_cov_min_threshold < 0.25:
+            print(f"Skipping reference: {ref} as less than 25% of the genome has sufficient read coverage.")
             continue
 
         alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=args.error_threshold)
@@ -554,8 +554,8 @@ def align(args):
         allelecount = Counter(sequence)
         print("allelecount: ", allelecount)
 
-        if sequence.count('N')/(float(len(sequence))) > 0.5:
-            print(f"Skipping reference: {ref} as greater than 50% of the genome has completely ambiguous (N) base calls!")
+        if sequence.count('N')/(float(len(sequence))) > 0.25:
+            print(f"Skipping reference: {ref} as greater than 25% of the genome has completely ambiguous (N) base calls!")
             continue
 
         with open(

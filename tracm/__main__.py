@@ -6,6 +6,7 @@ from .build_db import build_db_parser
 from .distance import distance_parser
 from .align import align_parser
 from .cluster import cluster_parser
+from .combine import combine_parser
 
 
 def main():
@@ -20,6 +21,9 @@ def main():
     # add subcommands
     align_subparser = subparsers.add_parser("align")
     align_subparser = align_parser(align_subparser)
+
+    combine_subparser = subparsers.add_parser("combine")
+    combine_subparser = combine_parser(combine_subparser)
 
     distance_subparser = subparsers.add_parser("distance")
     distance_subparser = distance_parser(distance_subparser)
