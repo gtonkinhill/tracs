@@ -5,9 +5,11 @@ import argparse
 import glob
 import gzip
 from collections import defaultdict
+import pyfastx
+from joblib import Parallel, delayed
+
 
 def combine_parser(parser):
-
     parser.description = "Combine runs of Tracm'm align ready for distance estimation"
 
     io_opts = parser.add_argument_group("Input/output")
@@ -31,6 +33,16 @@ def combine_parser(parser):
         type=str,
     )
 
+    # Other options
+    parser.add_argument(
+        "-t",
+        "--threads",
+        dest="n_cpu",
+        help="number of threads to use (default=1)",
+        type=int,
+        default=1,
+    )
+
     parser.add_argument(
         "--quiet",
         dest="quiet",
@@ -45,7 +57,6 @@ def combine_parser(parser):
 
 
 def find_ref(filename):
-
     pattern = r"posterior_counts_ref_(.+)\.fasta"
     result = re.search(pattern, filename)
 
@@ -57,8 +68,8 @@ def find_ref(filename):
 
     return ref
 
-def combine(args):
 
+def combine(args):
     # check that all directories exist
     for directory in args.directories:
         if not os.path.isdir(directory):
@@ -70,24 +81,39 @@ def combine(args):
         os.mkdir(args.output_dir)
     # make sure trailing forward slash is present
     args.output_dir = os.path.join(args.output_dir, "")
-    
+
     # collect alignments by reference genome
     alignments = defaultdict(list)
     for directory in args.directories:
+        sample = os.path.basename(os.path.normpath(directory))
         for aln in glob.iglob(os.path.join(directory, "*posterior_counts_ref_*.fasta")):
             ref = find_ref(aln)
-            sample = os.path.basename(os.path.normpath(aln))
             alignments[ref].append((sample, aln))
 
     # write out as gzipped multifasta files
-    for ref, alns in alignments.items():
-        if not args.quiet:
-            print("Writing combined alignment for {} to {}".format(ref, args.output_dir + ref + '_combined.fasta.gz'))
-        with gzip.open(args.output_dir + ref + '_combined.fasta.gz', "wt") as fasta_file:
-            for seq in alns:
-                fasta_file.write(f'>{seq[0]}\n{seq[1]}\n')
+    Parallel(n_jobs=args.n_cpu)(
+        delayed(write_alignment)(ref, alns, args.output_dir, args.quiet)
+            for ref, alns in alignments.items()
+    )
 
     return
+
+
+def write_alignment(ref, alns, output_dir, quiet):
+    output_file = output_dir + ref + "_combined.fasta.gz"
+
+    with gzip.open(output_file, "wt") as fasta_file:
+        for aln in alns:
+            count = 0
+            for name, seq in pyfastx.Fasta(aln[1], build_index=False):
+                fasta_file.write(f">{aln[0]}\n{seq}\n")
+                count += 1
+                if count > 1:
+                    print("ERROR: {} contains more than one sequence".format(aln[1]))
+                    sys.exit(1)
+
+    if not quiet:
+        print("Writing combined alignment for {} to {}".format(ref, output_file))
 
 
 def main():
