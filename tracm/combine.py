@@ -71,6 +71,10 @@ def find_ref(filename):
 
 def combine(args):
     # check that all directories exist
+    if len(args.directories) == 1:
+        with open(args.directories[0], "r") as infile:
+            args.directories = [line.strip() for line in infile.readlines()]
+        
     for directory in args.directories:
         if not os.path.isdir(directory):
             print("ERROR: {} is not a directory".format(directory))
