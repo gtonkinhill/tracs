@@ -7,57 +7,23 @@ import gzip
 from zipfile import ZipFile
 import tempfile
 import numpy as np
-from scipy.stats import norm, poisson
+# from scipy.stats import norm, poisson
 import pyfastx as fx
 import ncbi_genome_download as ngd
 import glob
+import pathlib
 
 from .utils import run_gather, generate_reads
 from .pileup import align_and_pileup, align_and_pileup_composite
 from .dirichlet_multinomial import find_dirichlet_priors
+
 from TRACM import calculate_posteriors
 
 from collections import Counter
 
 
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
-def hogg_estimator_of_skewness(data):
-    """
-    Calculate Hogg's estimator of skewness for the given data based on the definition provided.
-    
-    Parameters:
-    data (numpy.ndarray): An array of data points.
 
-    Returns:
-    float: Hogg's estimator of skewness for the input data.
-
-    Hogg's measure of skewness (1974, p. 918) is a ratio of the right tail length to the left tail length. 
-    The right tail length is estimated as U(0.05) – M25, where U(0.05) is the average of the largest 5% of 
-    the data and M25 is the 25% trimmed mean of the data. The left tail length is estimated as M25 – L(0.05), 
-    where L(0.05) is the average of the smallest 5% of the data. The Hogg estimator is
-    SkewH = (U(0.05) – M25) / (M25 - L(0.05))
-    """
-    n = len(data)
-
-    sorted_data = np.sort(data)
-    p_05 = int(n * 0.05)
-    
-    if p_05 == 0:
-        raise ValueError("Insufficient data points for Hogg's estimator of skewness calculation.")
-    
-    # Calculate the average of the largest and smallest 5% of the data
-    U_05 = np.mean(sorted_data[-p_05:])
-    L_05 = np.mean(sorted_data[:p_05])
-    
-    # Calculate the 25% trimmed mean of the data
-    trim_25 = int(n * 0.25)
-    M25 = np.mean(sorted_data[trim_25:-trim_25])
-    
-    # Calculate the Hogg's estimator of skewness
-    hogg_skewness = (U_05 - M25) / (M25 - L_05)
-
-    return hogg_skewness
 
 def align_parser(parser):
 
@@ -252,6 +218,14 @@ def download_ref(ref, outputdir):
 
     return refpath
 
+def find_fasta(root_dir, prefix):
+    converted_s = f"/{prefix[:3]}/{prefix[4:7]}/{prefix[7:10]}/{prefix[10:13]}/"
+    for file in glob.glob(root_dir + converted_s + "*.fna.gz"):
+        print(file)
+        return str(file)
+    
+    raise ValueError("Could not download reference for: ", prefix)
+    return None
 
 def align(args):
 
@@ -301,6 +275,8 @@ def align(args):
         os.mkdir(args.output_dir)
     # make sure trailing forward slash is present
     args.output_dir = os.path.join(args.output_dir, "")
+    if args.refseqs is not None:
+        args.refseqs = os.path.join(args.refseqs, "")
     # Create temporary directory
     temp_dir = os.path.join(tempfile.mkdtemp(dir=args.output_dir), "")
     # temp_dir = args.output_dir + "temp/"
@@ -328,19 +304,24 @@ def align(args):
     ref_locs = {}
     if ".sbt.zip" in args.database:
         print('No references provided. Tracm will attempt to download references from Genbank')
-        if not os.path.exists(args.output_dir + 'genbank_references'):
-            os.mkdir(args.output_dir + 'genbank_references')
+
+        if args.refseqs is None:
+            if not os.path.exists(args.output_dir + 'genbank_references'):
+                os.mkdir(args.output_dir + 'genbank_references')
 
         # attempt to download references
         references = [r.split()[0].strip('"') for r in references]
         print(references)
         for ref in references:
-            temprefdir = args.output_dir + 'genbank_references/' + ref + '/'
-            if not os.path.exists(temprefdir):
-                os.mkdir(temprefdir)
-                ref_locs[ref] = download_ref(ref, temprefdir)
+            if args.refseqs is None:
+                temprefdir = args.output_dir + 'genbank_references/' + ref + '/'
+                if not os.path.exists(temprefdir):
+                    os.mkdir(temprefdir)
+                    ref_locs[ref] = download_ref(ref, temprefdir)
+                else:
+                    ref_locs[ref] = glob.glob(temprefdir + '*.fna.gz')[0]
             else:
-                ref_locs[ref] = glob.glob(temprefdir + '*.fna.gz')[0]
+                ref_locs[ref] = find_fasta(args.refseqs, ref)
     else:
         with ZipFile(args.database, "r") as archive:
             for ref in references:
