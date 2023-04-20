@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import gzip
 import pyfastx as fx
 
 
@@ -91,7 +92,7 @@ def align_and_pileup_composite(
 
     # split into references
     for ref in references:
-        with open(prefix + "_ref_" + str(ref) + "_pileup.txt", 'w') as outfile:
+        with gzip.open(prefix + "_ref_" + str(ref) + "_pileup.txt", 'wt') as outfile:
             with open(outdir + "composite_pileup.txt", 'r') as infile:
                 for line in infile:
                     line = line.strip().split('@')
@@ -182,6 +183,13 @@ def align_and_pileup(
     cmd += ' ' + temp_file.name
     cmd += " > " + prefix + "_pileup.txt"
 
+    if not quiet:
+        print("running cmd: " + cmd)
+
+    subprocess.run(cmd, shell=True, check=True)
+
+
+    cmd = "gzip " + prefix + "_pileup.txt"
     if not quiet:
         print("running cmd: " + cmd)
 
