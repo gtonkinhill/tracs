@@ -410,8 +410,8 @@ def align(args):
         for name, seq in fx.Fasta(ref_locs[ref], build_index=False):
             all_counts[name] = np.zeros((len(seq), 4), dtype=float)
 
-        with open(
-            args.output_dir + args.prefix + "_ref_" + str(ref) + "_pileup.txt", "r"
+        with gzip.open(
+            args.output_dir + args.prefix + "_ref_" + str(ref) + "_pileup.txt.gz", "rt"
         ) as infile:
             for i, line in enumerate(infile):
                 line = line.strip().split()

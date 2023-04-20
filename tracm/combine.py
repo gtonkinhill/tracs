@@ -4,6 +4,7 @@ import re
 import argparse
 import glob
 import gzip
+import math
 from collections import defaultdict
 from collections import ChainMap
 import pyfastx
@@ -79,14 +80,19 @@ def calculate_coverage(pileup):
     sample = os.path.dirname(pileup).split(os.sep)[-1]
     ref = re.search(r"ref_(.+)_pileup", os.path.basename(pileup)).group(1)
 
-    with gzip.open(pileup, "rt") as infile:
-        cov = 0
-        depth = 0
-        
-        for line in infile:
-            c = sum_after_semicolon(line)
-            if c>0 : cov += 1
-            depth += c
+    try:
+        with gzip.open(pileup, "rt") as infile:
+            cov = 0
+            depth = 0
+            
+            for line in infile:
+                c = sum_after_semicolon(line)
+                if c>0 : cov += 1
+                depth += c
+    except EOFError as e:
+        print(str(e))
+        print(f"Error: An EOFError occurred reading {pileup}")
+        return (sample, ref, math.nan, math.nan)
 
     return (sample, ref, cov, depth)
 
@@ -121,8 +127,6 @@ def combine(args):
             for ref, alns in alignments.items()
     )
     ncovs = ChainMap(*ncovs)
-
-    print(ncovs.keys())
 
     # calculate coverage
     coverage = Parallel(n_jobs=args.n_cpu)(
