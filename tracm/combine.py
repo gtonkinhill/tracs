@@ -146,7 +146,7 @@ def combine(args):
 
     # process sourmash results and write to output file
     with open(args.output_dir + "combined_metadata.csv", "w") as outfile:
-        outfile.write("sample,intersect_bp,f_orig_query,f_match,f_unique_to_query,accession,coverage,mean_depth,mean_nonzero_depth,frac_N,species\n")
+        outfile.write("sample,accession,intersect_bp,f_orig_query,f_match,f_unique_to_query,coverage,mean_depth,mean_nonzero_depth,frac_N,species\n")
         for directory in args.directories:
             sample = os.path.basename(os.path.normpath(directory))
             for sourmash in glob.iglob(os.path.join(directory, "*_sourmash_hits.csv")):
@@ -156,7 +156,7 @@ def combine(args):
                         line = line.strip().split(",")
                         accession = line[9].split()[0].strip('"')
                         
-                        species = line[9].replace(accession, '').strip()
+                        species = line[9].replace(accession, '').replace('"',).strip()
                         
                         if (sample, accession) in coverage_dict:
                             cov = coverage_dict[(sample, accession)]
@@ -164,9 +164,9 @@ def combine(args):
                                 ncov = str(ncovs[(sample, accession)][0])
                             else:
                                 ncov = "NA"
-                            outfile.write(','.join([sample, accession] + line[:3] + [str(cov[0]), str(cov[1]), str(cov[2]), ncov, species]) + '\n')
+                            outfile.write(','.join([sample, accession] + line[:4] + [str(cov[0]), str(cov[1]), str(cov[2]), ncov, species]) + '\n')
                         else:
-                            outfile.write(','.join([sample, accession] + line[:3] + ["NA", "NA", "NA", "NA",species]) + '\n')
+                            outfile.write(','.join([sample, accession] + line[:4] + ["NA", "NA", "NA", "NA",species]) + '\n')
                         
 
     return
