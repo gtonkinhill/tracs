@@ -2,6 +2,7 @@ import os
 import subprocess
 import tempfile
 import gzip
+import logging
 import pyfastx as fx
 
 
@@ -21,13 +22,11 @@ def align_and_pileup_composite(
     V = 1, #ignore queries with per-base divergence >FLOAT [1]
     T = 0, #ignore bases within INT-bp from either end of a read [0]
     n_cpu=1,
-    quiet=False,
     lowdisk=False
 ):
 
     # load pileups generated using the bampileup function
-    if not quiet:
-        print("Generating alignment and pileup...")
+    logging.info("Generating alignment and pileup...")
 
     # Build composite reference
     with open(outdir + 'composite_reference.fasta', 'w') as outfile:
@@ -62,15 +61,13 @@ def align_and_pileup_composite(
     else:
         cmd += " > " +  outdir + "read_aln.sam"
 
-    if not quiet:
-        print("running cmd: " + cmd)
+    logging.info("running cmd: %s", cmd)
 
     subprocess.run(cmd, shell=True, check=True)
 
     if not lowdisk:
         cmd = "htsbox samview -S -b " + outdir + "read_aln.sam | htsbox samsort -t " + str(n_cpu) + " - > " + temp_file.name
-        if not quiet:
-            print("running cmd: " + cmd)
+        logging.info("running cmd: %s", cmd)
         subprocess.run(cmd, shell=True, check=True)
 
     # run pileup
@@ -85,8 +82,7 @@ def align_and_pileup_composite(
     cmd += ' ' + temp_file.name
     cmd += " > " + outdir + "composite_pileup.txt"
 
-    if not quiet:
-        print("running cmd: " + cmd)
+    logging.info("running cmd: %s", cmd)
 
     subprocess.run(cmd, shell=True, check=True)
 
@@ -122,13 +118,11 @@ def align_and_pileup(
     V = 1, #ignore queries with per-base divergence >FLOAT [1]
     T = 0, #ignore bases within INT-bp from either end of a read [0]
     n_cpu=1,
-    quiet=False,
     lowdisk=False
 ):
 
     # load pileups generated using the bampileup function
-    if not quiet:
-        print("Generating alignment and pileup...")
+    logging.info("Generating alignment and pileup...")
 
     # run aligner
     temp_file = tempfile.NamedTemporaryFile(delete=False, dir=outdir)
@@ -155,19 +149,16 @@ def align_and_pileup(
     else:
         cmd += " > " +  outdir + "read_aln.sam"
 
-    if not quiet:
-        print("running cmd: " + cmd)
+    logging.info("running cmd: %s",  cmd)
 
     subprocess.run(cmd, shell=True, check=True)
 
     if not lowdisk:
         cmd = 'samtools view -S -b --threads ' + str(n_cpu) + ' --input-fmt-option "filter=[de] < ' + str(max_div) + '" ' + outdir + "read_aln.sam | samtools sort --threads " + str(n_cpu) + " - > " + temp_file.name
-        if not quiet:
-            print("running cmd: " + cmd)
+        logging.info("running cmd: " + cmd)
         subprocess.run(cmd, shell=True, check=True)
 
-    if not quiet:
-        print("running cmd: " + cmd)
+    logging.info("running cmd: %s", cmd)
 
     subprocess.run(cmd, shell=True, check=True)
 
@@ -183,15 +174,13 @@ def align_and_pileup(
     cmd += ' ' + temp_file.name
     cmd += " > " + prefix + "_pileup.txt"
 
-    if not quiet:
-        print("running cmd: " + cmd)
+    logging.info("running cmd: %s", cmd)
 
     subprocess.run(cmd, shell=True, check=True)
 
 
     cmd = "gzip " + prefix + "_pileup.txt"
-    if not quiet:
-        print("running cmd: " + cmd)
+    logging.info("running cmd: %s", cmd)
 
     subprocess.run(cmd, shell=True, check=True)
 

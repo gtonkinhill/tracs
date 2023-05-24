@@ -75,7 +75,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/gtonkinhill/tracm",
     install_requires=[
-        'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'pybind11', 'ncbi_genome_download', 'logging'
+        'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'pybind11', 'ncbi_genome_download'
     ],
     python_requires='>=3.6.0',
     packages=['tracm'],

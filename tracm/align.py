@@ -177,7 +177,6 @@ def align_parser(parser):
     )
 
     parser.add_argument(
-        "-l",
         "--loglevel",
         type=str.upper,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -331,7 +330,7 @@ def align(args):
             # attempt to download references
             references = [r.split()[0].strip('"') for r in references]
 
-            logging.debug(references)
+            logging.debug('%s', references)
 
             for ref in references:
                 temprefdir = args.output_dir + "genbank_references/" + ref + "/"
@@ -349,7 +348,7 @@ def align(args):
     # retrieve references and perform alignment
     if len(args.input_files) == 1:
 
-        logging.debug(os.path.splitext(args.input_files[0])[1])
+        logging.debug('%s', os.path.splitext(args.input_files[0])[1])
 
         if os.path.splitext(args.input_files[0])[1] in [".fasta", ".fa"]:
             # shred fasta to enable alignment step
@@ -378,8 +377,7 @@ def align(args):
             l=args.min_query_len,  # minimum query length
             V=args.max_div,  # ignore queries with per-base divergence >FLOAT [1]
             T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
-            n_cpu=args.n_cpu,
-            quiet=args.quiet,
+            n_cpu=args.n_cpu
         )
     else:
         for ref in references:
@@ -398,14 +396,13 @@ def align(args):
                 V=1,  # ignore queries with per-base divergence >FLOAT [1]
                 T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
                 max_div=args.max_div,
-                n_cpu=args.n_cpu,
-                quiet=args.quiet,
+                n_cpu=args.n_cpu
             )
 
     # add empirical Bayes pseudocounts
     npos = {"A": 0, "C": 1, "G": 2, "T": 3}
     for ref in references:
-        logging.info("Analysing reference: ", ref)
+        logging.info(f"Analysing reference: {ref}")
 
         all_counts = {}
         for name, seq in fx.Fasta(ref_locs[ref], build_index=False):
@@ -445,13 +442,11 @@ def align(args):
         expected_freq_threshold = max(args.min_cov / median_cov, args.error_threshold)
         total_cov_min_threshold = np.sum(rs >= args.min_cov) / all_counts.shape[0]
 
-        logging.info("Fraction of genome with read coverage: ", total_cov)
+        logging.info(f"Fraction of genome with read coverage: {total_cov}")
         logging.info(
-            "Fraction of genome with read coverage >= {}: {}".format(
-                args.min_cov, total_cov_min_threshold
-            )
+            f"Fraction of genome with read coverage >= {args.min_cov}: {total_cov_min_threshold}"
         )
-        logging.info("Median non-zero coverage: ", median_cov)
+        logging.info(f"Median non-zero coverage: {median_cov}")
 
         if total_cov_min_threshold < 0.25:
             logging.info(
@@ -469,8 +464,8 @@ def align(args):
                 "WARNING: Frequency threshold is set too low! The majority of the genome will be called as ambiguous."
             )
             logging.warning(
-                "WARNING: The threshold has been automatically increased to:",
-                expected_freq_threshold,
+                "WARNING: The threshold has been automatically increased to: %s",
+                expected_freq_threshold
             )
 
         # calculate coverage threshold to handle differences in gene presence and absence
@@ -484,19 +479,17 @@ def align(args):
             bad_cov_upper_bound = lq[0] - 1.5 * (lq[1] - lq[0])
 
             if bad_cov_lower_bound < bad_cov_upper_bound:
-                logging.info("Lower coverage bound: ", bad_cov_lower_bound)
-                logging.info("Upper coverage bound: ", bad_cov_upper_bound)
+                logging.info(f"Lower coverage bound: {bad_cov_lower_bound}")
+                logging.info(f"Upper coverage bound: {bad_cov_upper_bound}")
 
-        logging.info("Using frequency threshold: ", expected_freq_threshold)
+        logging.info(f"Using frequency threshold: {expected_freq_threshold}")
 
-        if not args.quiet:
-            logging.info("Calculating posterior frequency estimates...")
-            logging.info(
-                "Filtering sites with posterior estimates below frequency threshold:",
-                expected_freq_threshold,
-            )
-            if args.keep_all:
-                logging.info("Keeping all observed alleles")
+        logging.info("Calculating posterior frequency estimates...")
+        logging.info(
+            f"Filtering sites with posterior estimates below frequency threshold: {expected_freq_threshold}"
+        )
+        if args.keep_all:
+            logging.info("Keeping all observed alleles")
 
         # Calculate posterior frequency estimates and filter out those below the threshold
         all_counts = calculate_posteriors(
@@ -528,9 +521,9 @@ def align(args):
             alphas[1] / np.sum(alphas) > expected_freq_threshold
         ):
             logging.info(
-                "Fraction of genome filtered by coverage: ",
+                "Fraction of genome filtered by coverage: %s",
                 np.sum((rs < bad_cov_upper_bound) & (rs > bad_cov_lower_bound))
-                / len(rs),
+                / len(rs)
             )
             if bad_cov_upper_bound > bad_cov_lower_bound:
                 all_counts[
@@ -547,7 +540,7 @@ def align(args):
             .decode("utf-8")
         )
         allelecount = Counter(sequence)
-        logging.info("allelecount: ", allelecount)
+        logging.info(f"allelecount: {allelecount}")
 
         if sequence.count("N") / (float(len(sequence))) > 0.25:
             logging.info(
