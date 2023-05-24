@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import logging
 import time
 import shutil
 import gzip
@@ -20,47 +21,10 @@ from TRACM import calculate_posteriors
 from collections import Counter
 
 
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
-def hogg_estimator_of_skewness(data):
-    """
-    Calculate Hogg's estimator of skewness for the given data based on the definition provided.
-    
-    Parameters:
-    data (numpy.ndarray): An array of data points.
-
-    Returns:
-    float: Hogg's estimator of skewness for the input data.
-
-    Hogg's measure of skewness (1974, p. 918) is a ratio of the right tail length to the left tail length. 
-    The right tail length is estimated as U(0.05) – M25, where U(0.05) is the average of the largest 5% of 
-    the data and M25 is the 25% trimmed mean of the data. The left tail length is estimated as M25 – L(0.05), 
-    where L(0.05) is the average of the smallest 5% of the data. The Hogg estimator is
-    SkewH = (U(0.05) – M25) / (M25 - L(0.05))
-    """
-    n = len(data)
-
-    sorted_data = np.sort(data)
-    p_05 = int(n * 0.05)
-    
-    if p_05 == 0:
-        raise ValueError("Insufficient data points for Hogg's estimator of skewness calculation.")
-    
-    # Calculate the average of the largest and smallest 5% of the data
-    U_05 = np.mean(sorted_data[-p_05:])
-    L_05 = np.mean(sorted_data[:p_05])
-    
-    # Calculate the 25% trimmed mean of the data
-    trim_25 = int(n * 0.25)
-    M25 = np.mean(sorted_data[trim_25:-trim_25])
-    
-    # Calculate the Hogg's estimator of skewness
-    hogg_skewness = (U_05 - M25) / (M25 - L_05)
-
-    return hogg_skewness
 
 def align_parser(parser):
-
     parser.description = "Uses sourmash to identify reference genomes within a read set and then aligns reads to each reference using minimap2"
 
     io_opts = parser.add_argument_group("Input/output")
@@ -171,9 +135,7 @@ def align_parser(parser):
         "--min-cov",
         dest="min_cov",
         default=5,
-        help=(
-            "Minimum read coverage (default=5)."
-        ),
+        help=("Minimum read coverage (default=5)."),
         type=int,
     )
 
@@ -215,85 +177,117 @@ def align_parser(parser):
     )
 
     parser.add_argument(
-        "--quiet",
-        dest="quiet",
-        help="turns off some console output",
-        action="store_true",
-        default=False,
+        "-l",
+        "--loglevel",
+        type=str.upper,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set the logging threshold.",
     )
 
     parser.set_defaults(func=align)
 
     return parser
 
-def download_ref(ref, outputdir):
 
-    r = ngd.download(groups='bacteria',
-                    section='genbank',
-                    file_formats='fasta',
-                    flat_output=True,
-                    output=outputdir,
-                    assembly_accessions=ref
-                    )
-    if r!=0:
+def download_ref(ref, outputdir):
+    r = ngd.download(
+        groups="bacteria",
+        section="genbank",
+        file_formats="fasta",
+        flat_output=True,
+        output=outputdir,
+        assembly_accessions=ref,
+    )
+    if r != 0:
         # try refseq
-        r = ngd.download(groups='bacteria',
-                    section='refseq',
-                    file_formats='fasta',
-                    flat_output=True,
-                    output=outputdir,
-                    assembly_accessions=ref
-                    )
-    
-    if r!=0:
+        r = ngd.download(
+            groups="bacteria",
+            section="refseq",
+            file_formats="fasta",
+            flat_output=True,
+            output=outputdir,
+            assembly_accessions=ref,
+        )
+
+    if r != 0:
         raise ValueError("Could not download reference for: ", ref)
 
-    refpath = glob.glob(outputdir + '*fna.gz')[0]
+    refpath = glob.glob(outputdir + "*fna.gz")[0]
 
     return refpath
 
 
 def align(args):
 
-    # alleles = np.array(["A", "C", "G", "T"])
-    # iupac_codes = {
-    #     "A": "A",
-    #     "C": "C",
-    #     "G": "G",
-    #     "T": "T",
-    #     "AC": "M",
-    #     "AG": "R",
-    #     "AT": "W",
-    #     "CG": "S",
-    #     "CT": "Y",
-    #     "GT": "K",
-    #     "CGT": "B",
-    #     "AGT": "D",
-    #     "ACT": "H",
-    #     "ACG": "V",
-    #     "ACGT": "N"
-    # }
+    # set logging up
+    logging.basicConfig(
+        level=args.loglevel,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
-    b = np.array([
-        [0,0,0,0], # X
-        [1,0,0,0], # A
-        [0,1,0,0], # C
-        [0,0,1,0], # G
-        [0,0,0,1], # T
-        [1,1,0,0], # AC
-        [1,0,1,0], # AG
-        [1,0,0,1], # AT
-        [0,1,1,0], # CG
-        [0,1,0,1], # CT
-        [0,0,1,1], # GT
-        [0,1,1,1], # CGT
-        [1,0,1,1], # AGT
-        [1,1,0,1], # ACT
-        [1,1,1,0], # ACG
-        [1,1,1,1]  # ACGT
-        ])
+    # check inputs
+    if args.database is None and args.refseqs is None:
+        logging.error("Must provide either a database or reference sequences!")
+        sys.exit(1)
+
+    if args.database is not None:
+        if ".zip" not in args.database:
+            logging.error("Database must be a zip file!")
+            sys.exit(1)
+    
+    single_ref = False
+    if args.refseqs is not None and args.database is None:
+        if ".fna" not in args.refseqs and ".fasta" not in args.refseqs:
+            logging.error("Reference sequences must be a fasta file if not using a database!")
+            sys.exit(1)
+        else:
+            single_ref = True
+            references = [os.path.splitext(os.path.basename(args.refseqs))[0]]
+            ref_locs = {references[0]: args.refseqs}
+
+
+
+    b = np.array(
+        [
+            [0, 0, 0, 0],  # X
+            [1, 0, 0, 0],  # A
+            [0, 1, 0, 0],  # C
+            [0, 0, 1, 0],  # G
+            [0, 0, 0, 1],  # T
+            [1, 1, 0, 0],  # AC
+            [1, 0, 1, 0],  # AG
+            [1, 0, 0, 1],  # AT
+            [0, 1, 1, 0],  # CG
+            [0, 1, 0, 1],  # CT
+            [0, 0, 1, 1],  # GT
+            [0, 1, 1, 1],  # CGT
+            [1, 0, 1, 1],  # AGT
+            [1, 1, 0, 1],  # ACT
+            [1, 1, 1, 0],  # ACG
+            [1, 1, 1, 1],  # ACGT
+        ]
+    )
     iupac_codes = np.chararray(b.shape[0])
-    iupac_codes[np.packbits(b, axis=1, bitorder='little').flatten()] = [b'X',b'A',b'C',b'G',b'T',b'M',b'R',b'W',b'S',b'Y',b'K',b'B',b'D',b'H',b'V',b'N']
+    iupac_codes[np.packbits(b, axis=1, bitorder="little").flatten()] = [
+        b"X",
+        b"A",
+        b"C",
+        b"G",
+        b"T",
+        b"M",
+        b"R",
+        b"W",
+        b"S",
+        b"Y",
+        b"K",
+        b"B",
+        b"D",
+        b"H",
+        b"V",
+        b"N",
+    ]
 
     # get working directory and create temp directory
     # create directory if it isn't present already
@@ -309,50 +303,57 @@ def align(args):
     if args.prefix is None:
         args.prefix = os.path.splitext(os.path.basename(args.input_files[0]))[0]
 
-    # retrieve sourmash database from zipfile
-    if ".sbt.zip" in args.database:
-        smdb = args.database
-    else:
-        with ZipFile(args.database, "r") as archive:
-            archive.extract("sourmashDB.sbt.zip", temp_dir)
-            smdb = temp_dir + "sourmashDB.sbt.zip"
+    if not single_ref:
+        # retrieve sourmash database from zipfile
+        if ".sbt.zip" in args.database:
+            smdb = args.database
+        else:
+            with ZipFile(args.database, "r") as archive:
+                archive.extract("sourmashDB.sbt.zip", temp_dir)
+                smdb = temp_dir + "sourmashDB.sbt.zip"
 
-    # run soursmash 'gather' method
-    references = run_gather(
-        input_files=args.input_files,
-        databasefile=smdb,
-        output=args.output_dir + args.prefix + "_sourmash_hits",
-        temp_dir=temp_dir,
-    )
+        # run soursmash 'gather' method
+        references = run_gather(
+            input_files=args.input_files,
+            databasefile=smdb,
+            output=args.output_dir + args.prefix + "_sourmash_hits",
+            temp_dir=temp_dir,
+        )
 
-    ref_locs = {}
-    if ".sbt.zip" in args.database:
-        print('No references provided. Tracm will attempt to download references from Genbank')
-        if not os.path.exists(args.output_dir + 'genbank_references'):
-            os.mkdir(args.output_dir + 'genbank_references')
+        ref_locs = {}
+        if ".sbt.zip" in args.database:
+            logging.warning(
+                "No references provided. Tracm will attempt to download references from Genbank"
+            )
+            if not os.path.exists(args.output_dir + "genbank_references"):
+                os.mkdir(args.output_dir + "genbank_references")
 
-        # attempt to download references
-        references = [r.split()[0].strip('"') for r in references]
-        print(references)
-        for ref in references:
-            temprefdir = args.output_dir + 'genbank_references/' + ref + '/'
-            if not os.path.exists(temprefdir):
-                os.mkdir(temprefdir)
-                ref_locs[ref] = download_ref(ref, temprefdir)
-            else:
-                ref_locs[ref] = glob.glob(temprefdir + '*.fna.gz')[0]
-    else:
-        with ZipFile(args.database, "r") as archive:
+            # attempt to download references
+            references = [r.split()[0].strip('"') for r in references]
+
+            logging.debug(references)
+
             for ref in references:
-                archive.extract(ref + ".fasta.gz", temp_dir)
-                ref_locs[ref] = temp_dir + ref + ".fasta.gz"
+                temprefdir = args.output_dir + "genbank_references/" + ref + "/"
+                if not os.path.exists(temprefdir):
+                    os.mkdir(temprefdir)
+                    ref_locs[ref] = download_ref(ref, temprefdir)
+                else:
+                    ref_locs[ref] = glob.glob(temprefdir + "*.fna.gz")[0]
+        else:
+            with ZipFile(args.database, "r") as archive:
+                for ref in references:
+                    archive.extract(ref + ".fasta.gz", temp_dir)
+                    ref_locs[ref] = temp_dir + ref + ".fasta.gz"
 
     # retrieve references and perform alignment
     if len(args.input_files) == 1:
-        print(os.path.splitext(args.input_files[0])[1])
-        if os.path.splitext(args.input_files[0])[1] in ['.fasta','.fa']:
+
+        logging.debug(os.path.splitext(args.input_files[0])[1])
+
+        if os.path.splitext(args.input_files[0])[1] in [".fasta", ".fa"]:
             # shred fasta to enable alignment step
-            r1 = temp_dir + "simulated_" + os.path.basename(args.input_files[0]) + '.gz'
+            r1 = temp_dir + "simulated_" + os.path.basename(args.input_files[0]) + ".gz"
             generate_reads(args.input_files[0], r1)
         else:
             r1 = args.input_files[0]
@@ -361,7 +362,7 @@ def align(args):
         r1 = args.input_files[0]
         r2 = args.input_files[1]
 
-    composite=False
+    composite = False
     if composite:
         align_and_pileup_composite(
             ref_locs,
@@ -372,11 +373,11 @@ def align(args):
             aligner="minimap2",
             minimap_preset=args.minimap_preset,
             minimap_params=None,
-            Q = args.min_base_qual, #minimum base quality
-            q = args.min_map_qual, #minimum mapping quality
-            l = args.min_query_len, #minimum query length
-            V = args.max_div, #ignore queries with per-base divergence >FLOAT [1]
-            T = args.trim, #ignore bases within INT-bp from either end of a read [0]
+            Q=args.min_base_qual,  # minimum base quality
+            q=args.min_map_qual,  # minimum mapping quality
+            l=args.min_query_len,  # minimum query length
+            V=args.max_div,  # ignore queries with per-base divergence >FLOAT [1]
+            T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
             n_cpu=args.n_cpu,
             quiet=args.quiet,
         )
@@ -391,11 +392,11 @@ def align(args):
                 aligner="minimap2",
                 minimap_preset=args.minimap_preset,
                 minimap_params=None,
-                Q = args.min_base_qual, #minimum base quality
-                q = args.min_map_qual, #minimum mapping quality
-                l = args.min_query_len, #minimum query length
-                V = 1, #ignore queries with per-base divergence >FLOAT [1]
-                T = args.trim, #ignore bases within INT-bp from either end of a read [0]
+                Q=args.min_base_qual,  # minimum base quality
+                q=args.min_map_qual,  # minimum mapping quality
+                l=args.min_query_len,  # minimum query length
+                V=1,  # ignore queries with per-base divergence >FLOAT [1]
+                T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
                 max_div=args.max_div,
                 n_cpu=args.n_cpu,
                 quiet=args.quiet,
@@ -404,7 +405,7 @@ def align(args):
     # add empirical Bayes pseudocounts
     npos = {"A": 0, "C": 1, "G": 2, "T": 3}
     for ref in references:
-        print("Analysing reference: ", ref)
+        logging.info("Analysing reference: ", ref)
 
         all_counts = {}
         for name, seq in fx.Fasta(ref_locs[ref], build_index=False):
@@ -431,100 +432,80 @@ def align(args):
                         if (c1 == 0) or (c2 == 0):
                             c1 = c2 = 0
                     counts[npos[nuc]] = c1 + c2
-                all_counts[contig][pos,:] = counts
+                all_counts[contig][pos, :] = counts
         all_counts = np.concatenate(list(all_counts.values()))
 
         # minimum coverage
         rs = np.sum(all_counts, 1)
-        nz_cov = np.sum(all_counts[rs>0,], 1)
-        total_cov = np.sum(rs>0)/all_counts.shape[0]
+        nz_cov = np.sum(all_counts[rs > 0,], 1)
+        total_cov = np.sum(rs > 0) / all_counts.shape[0]
         median_cov = np.median(nz_cov)
-        mean_cov = np.mean(nz_cov)
-        sd_cov = np.std(nz_cov)
 
         # calculate minimum frequency threshold
-        expected_freq_threshold = max(args.min_cov/median_cov, args.error_threshold)
-        total_cov_min_threshold = np.sum(rs >= args.min_cov)/all_counts.shape[0]
+        expected_freq_threshold = max(args.min_cov / median_cov, args.error_threshold)
+        total_cov_min_threshold = np.sum(rs >= args.min_cov) / all_counts.shape[0]
 
-        print("Fraction of genome with read coverage: ", total_cov)
-        print("Fraction of genome with read coverage >= {}: {}".format(args.min_cov, total_cov_min_threshold))
-        print("Median non-zero coverage: ", median_cov)
-        # print("Mean non-zero coverage: ", mean_cov)
-        # print("Standard deviation non-zero coverage: ", sd_cov)
-        # print("MAD: ", np.median(np.abs(nz_cov - median_cov)))
-        # print("quantile: ", np.quantile(nz_cov, [0.025, 0.25, 0.75, 0.975]))
-        
+        logging.info("Fraction of genome with read coverage: ", total_cov)
+        logging.info(
+            "Fraction of genome with read coverage >= {}: {}".format(
+                args.min_cov, total_cov_min_threshold
+            )
+        )
+        logging.info("Median non-zero coverage: ", median_cov)
+
         if total_cov_min_threshold < 0.25:
-            print(f"Skipping reference: {ref} as less than 25% of the genome has sufficient read coverage.")
+            logging.info(
+                f"Skipping reference: {ref} as less than 25% of the genome has sufficient read coverage."
+            )
             continue
 
-        alphas = find_dirichlet_priors(all_counts, method='FPI', error_filt_threshold=args.error_threshold)
+        alphas = find_dirichlet_priors(
+            all_counts, method="FPI", error_filt_threshold=args.error_threshold
+        )
 
-        if expected_freq_threshold <= alphas[1]/(median_cov + np.sum(alphas)):
-            expected_freq_threshold = alphas[1]/(median_cov + np.sum(alphas)) + 0.01
-            print("WARNING: Frequency threshold is set too low! The majority of the genome will be called as ambiguous.")
-            print("WARNING: The threshold has been automatically increased to:", expected_freq_threshold)
-        
+        if expected_freq_threshold <= alphas[1] / (median_cov + np.sum(alphas)):
+            expected_freq_threshold = alphas[1] / (median_cov + np.sum(alphas)) + 0.01
+            logging.warning(
+                "WARNING: Frequency threshold is set too low! The majority of the genome will be called as ambiguous."
+            )
+            logging.warning(
+                "WARNING: The threshold has been automatically increased to:",
+                expected_freq_threshold,
+            )
+
         # calculate coverage threshold to handle differences in gene presence and absence
         cov_filter_threshold = 50
-        if (median_cov > cov_filter_threshold) and (alphas[1]/np.sum(alphas) > expected_freq_threshold):
-            bad_cov_lower_bound = alphas[1]/expected_freq_threshold - np.sum(alphas)
-           
-            # bad_cov_upper_bound = norm.ppf(0.025, np.mean(nz_cov), np.std(nz_cov))
-            
-            # lq = np.quantile(np.log2(nz_cov), [0.25,0.75])
-            # bad_cov_upper_bound = np.power(2, lq[0] - 1.5*(lq[1]-lq[0]))
+        if (median_cov > cov_filter_threshold) and (
+            alphas[1] / np.sum(alphas) > expected_freq_threshold
+        ):
+            bad_cov_lower_bound = alphas[1] / expected_freq_threshold - np.sum(alphas)
 
-            # lq = np.quantile(np.arcsinh(nz_cov), [0.25,0.75])
-            # bad_cov_upper_bound = np.sinh(lq[0] - 1.5*(lq[1]-lq[0]))
+            lq = np.quantile(nz_cov, [0.25, 0.5])
+            bad_cov_upper_bound = lq[0] - 1.5 * (lq[1] - lq[0])
 
-            # lq = np.quantile(nz_cov, [0.25,0.75])
-            # bad_cov_upper_bound = lq[0] - 1.5*(lq[1]-lq[0])
-
-            lq = np.quantile(nz_cov, [0.25,0.5])
-            bad_cov_upper_bound = lq[0] - 1.5*(lq[1]-lq[0])
-            
-            # lmed = np.median(np.log(nz_cov))
-            # lmad = np.median(np.abs(np.log(nz_cov) -lmed ))
-            # bad_cov_upper_bound = np.exp(norm.ppf(0.025, lmed, lmad))
-
-            # lmed = np.median(nz_cov)
-            # lmad = np.median(np.abs(nz_cov -lmed ))
-            # bad_cov_upper_bound = norm.ppf(0.025, lmed, lmad)
-
-            # q = np.quantile(nz_cov, [0.25, 0.75])
-            # M = hogg_estimator_of_skewness(nz_cov)
-            # bad_cov_upper_bound = q[0]-np.exp(-4*M)*1.5*(q[1]-q[0])
-
-            # bad_cov_upper_bound = 0.9*median_cov 
-            
-            # bad_cov_upper_bound = poisson.ppf(0.025, np.mean(nz_cov))
             if bad_cov_lower_bound < bad_cov_upper_bound:
-                print("Lower coverage bound: ", bad_cov_lower_bound)
-                print("Upper coverage bound: ", bad_cov_upper_bound)
+                logging.info("Lower coverage bound: ", bad_cov_lower_bound)
+                logging.info("Upper coverage bound: ", bad_cov_upper_bound)
 
-        print("Using frequency threshold: ", expected_freq_threshold)
+        logging.info("Using frequency threshold: ", expected_freq_threshold)
 
         if not args.quiet:
-            print("Calculating posterior frequency estimates...")
-            print(
+            logging.info("Calculating posterior frequency estimates...")
+            logging.info(
                 "Filtering sites with posterior estimates below frequency threshold:",
                 expected_freq_threshold,
             )
             if args.keep_all:
-                print("Keeping all observed alleles")
+                logging.info("Keeping all observed alleles")
 
         # Calculate posterior frequency estimates and filter out those below the threshold
         all_counts = calculate_posteriors(
             all_counts, alphas, args.keep_all, expected_freq_threshold
         )
 
-        # normalise
-        # all_counts = all_counts/np.sum(all_counts, 1, keepdims=True)
-
         # save allele counts to file
-        if not args.quiet:
-            print("saving to file...")
+        logging.info("saving to file...")
+        
         with gzip.open(
             args.output_dir
             + args.prefix
@@ -543,19 +524,35 @@ def align(args):
             outfile.write(b"\n")
 
         # apply coverage filter
-        if (median_cov > cov_filter_threshold) and (alphas[1]/np.sum(alphas) > expected_freq_threshold):
-            print("Fraction of genome filtered by coverage: ", np.sum((rs<bad_cov_upper_bound) & (rs>bad_cov_lower_bound))/len(rs))
+        if (median_cov > cov_filter_threshold) and (
+            alphas[1] / np.sum(alphas) > expected_freq_threshold
+        ):
+            logging.info(
+                "Fraction of genome filtered by coverage: ",
+                np.sum((rs < bad_cov_upper_bound) & (rs > bad_cov_lower_bound))
+                / len(rs),
+            )
             if bad_cov_upper_bound > bad_cov_lower_bound:
-                all_counts[(rs <= bad_cov_upper_bound) & (rs >= bad_cov_lower_bound),] = 1
+                all_counts[
+                    (rs <= bad_cov_upper_bound) & (rs >= bad_cov_lower_bound),
+                ] = 1
         all_counts[rs < args.min_cov,] = 1
 
         # generate fasta outputs
-        sequence = iupac_codes[np.packbits(all_counts>0, axis=1, bitorder='little').flatten()].tobytes().decode("utf-8")
+        sequence = (
+            iupac_codes[
+                np.packbits(all_counts > 0, axis=1, bitorder="little").flatten()
+            ]
+            .tobytes()
+            .decode("utf-8")
+        )
         allelecount = Counter(sequence)
-        print("allelecount: ", allelecount)
+        logging.info("allelecount: ", allelecount)
 
-        if sequence.count('N')/(float(len(sequence))) > 0.25:
-            print(f"Skipping reference: {ref} as greater than 25% of the genome has completely ambiguous (N) base calls!")
+        if sequence.count("N") / (float(len(sequence))) > 0.25:
+            logging.info(
+                f"Skipping reference: {ref} as greater than 25% of the genome has completely ambiguous (N) base calls!"
+            )
             continue
 
         with open(

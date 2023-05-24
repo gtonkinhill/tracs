@@ -12,6 +12,8 @@
 #include <boost/dynamic_bitset.hpp>
 #include <boost/math/distributions/binomial.hpp>
 
+using namespace std;
+
 template <typename T>
 std::vector<T> combine_vectors(const std::vector<std::vector<T>> &vec,
                                const size_t len)
@@ -287,9 +289,9 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool fil
 {
 
   // open filename and initialise kseq
-  size_t n_seqs = 0;
-  size_t seq_length;
-  size_t i_end, j_start;
+  uint64_t n_seqs = 0;
+  uint64_t seq_length;
+  uint64_t i_end, j_start;
 
   // initialise bitmaps
   std::vector<std::string> seq_names;
