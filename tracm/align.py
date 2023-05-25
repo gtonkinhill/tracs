@@ -218,7 +218,6 @@ def download_ref(ref, outputdir):
 
 
 def align(args):
-
     # set logging up
     logging.basicConfig(
         level=args.loglevel,
@@ -235,18 +234,18 @@ def align(args):
         if ".zip" not in args.database:
             logging.error("Database must be a zip file!")
             sys.exit(1)
-    
+
     single_ref = False
     if args.refseqs is not None and args.database is None:
         if ".fna" not in args.refseqs and ".fasta" not in args.refseqs:
-            logging.error("Reference sequences must be a fasta file if not using a database!")
+            logging.error(
+                "Reference sequences must be a fasta file if not using a database!"
+            )
             sys.exit(1)
         else:
             single_ref = True
             references = [os.path.splitext(os.path.basename(args.refseqs))[0]]
             ref_locs = {references[0]: args.refseqs}
-
-
 
     b = np.array(
         [
@@ -330,7 +329,7 @@ def align(args):
             # attempt to download references
             references = [r.split()[0].strip('"') for r in references]
 
-            logging.debug('%s', references)
+            logging.debug("%s", references)
 
             for ref in references:
                 temprefdir = args.output_dir + "genbank_references/" + ref + "/"
@@ -347,8 +346,7 @@ def align(args):
 
     # retrieve references and perform alignment
     if len(args.input_files) == 1:
-
-        logging.debug('%s', os.path.splitext(args.input_files[0])[1])
+        logging.debug("%s", os.path.splitext(args.input_files[0])[1])
 
         if os.path.splitext(args.input_files[0])[1] in [".fasta", ".fa"]:
             # shred fasta to enable alignment step
@@ -377,7 +375,7 @@ def align(args):
             l=args.min_query_len,  # minimum query length
             V=args.max_div,  # ignore queries with per-base divergence >FLOAT [1]
             T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
-            n_cpu=args.n_cpu
+            n_cpu=args.n_cpu,
         )
     else:
         for ref in references:
@@ -396,7 +394,7 @@ def align(args):
                 V=1,  # ignore queries with per-base divergence >FLOAT [1]
                 T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
                 max_div=args.max_div,
-                n_cpu=args.n_cpu
+                n_cpu=args.n_cpu,
             )
 
     # add empirical Bayes pseudocounts
@@ -465,7 +463,7 @@ def align(args):
             )
             logging.warning(
                 "WARNING: The threshold has been automatically increased to: %s",
-                expected_freq_threshold
+                expected_freq_threshold,
             )
 
         # calculate coverage threshold to handle differences in gene presence and absence
@@ -498,7 +496,7 @@ def align(args):
 
         # save allele counts to file
         logging.info("saving to file...")
-        
+
         with gzip.open(
             args.output_dir
             + args.prefix
@@ -523,7 +521,7 @@ def align(args):
             logging.info(
                 "Fraction of genome filtered by coverage: %s",
                 np.sum((rs < bad_cov_upper_bound) & (rs > bad_cov_lower_bound))
-                / len(rs)
+                / len(rs),
             )
             if bad_cov_upper_bound > bad_cov_lower_bound:
                 all_counts[

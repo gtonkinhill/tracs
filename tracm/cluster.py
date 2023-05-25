@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import logging
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -21,7 +22,6 @@ def index_count(name):
 
 
 def cluster_parser(parser):
-
     parser.description = "Groups samples into putative transmission clusters using single linkage clustering"
 
     io_opts = parser.add_argument_group("Input/output")
@@ -62,17 +62,17 @@ def cluster_parser(parser):
         help="The type of transmission distance to use. Can be one of 'SNP', 'direct', 'expectedK'",
         choices=["SNP", "direct", "expectedK"],
         type=str,
-        default='SNP',
-        required=True
+        default="SNP",
+        required=True,
     )
 
     # Other options
     parser.add_argument(
-        "--quiet",
-        dest="quiet",
-        help="turns off some console output",
-        action="store_true",
-        default=False,
+        "--loglevel",
+        type=str.upper,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set the logging threshold.",
     )
 
     parser.set_defaults(func=cluster)
@@ -81,6 +81,12 @@ def cluster_parser(parser):
 
 
 def cluster(args):
+    # set logging up
+    logging.basicConfig(
+        level=args.loglevel,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     if args.distance == "SNP":
         col_index = 3
@@ -104,17 +110,16 @@ def cluster(args):
                 I.append(i)
                 J.append(j)
             count += 1
-    
+
     if count <= 0:
-        print("No distances available! Abandoning clustering.")
+        logging.warning("No distances available! Abandoning clustering.")
         return
 
     # pull out names in order
     names = list(index_count.dict.keys())
     nsamples = len(names)
 
-    if not args.quiet:
-        print("Clustering %d samples..." % nsamples)
+    logging.info(f"Clustering {nsamples} samples...")
 
     # Build sparse graph and find connected components
     G = csr_matrix((np.ones_like(I), (I, J)), shape=(nsamples, nsamples))
@@ -122,8 +127,7 @@ def cluster(args):
         csgraph=G, directed=False, return_labels=True
     )
 
-    if not args.quiet:
-        print(n_components, " putative transmission clusters found!")
+    logging.info(f"{n_components} putative transmission clusters found!")
 
     # write clusters to file
     with open(args.output_file, "w") as outfile:

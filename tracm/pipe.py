@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import logging
 import time
 import shutil
 import tempfile
@@ -242,11 +243,11 @@ def pipe_parser(parser):
     )
 
     parser.add_argument(
-        "--quiet",
-        dest="quiet",
-        help="turns off some console output",
-        action="store_true",
-        default=False,
+        "--loglevel",
+        type=str.upper,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set the logging threshold.",
     )
 
     parser.set_defaults(func=pipe)
@@ -255,6 +256,13 @@ def pipe_parser(parser):
 
 
 def pipe(args):
+
+    # set logging up
+    logging.basicConfig(
+        level=args.loglevel,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     # get working directory and create temp directory
     # create directory if it isn't present already
@@ -295,9 +303,7 @@ def pipe(args):
     references = defaultdict(list)
     for prefix in prefixes:
         for aln in glob.glob(outputdir + prefix + "/*.fasta"):
-            print(aln)
             ref = re.search(r"posterior_counts_ref_(.+?)\.fasta", aln).group(1)
-            print(ref)
             references[ref].append(aln)
     
     alignments = []

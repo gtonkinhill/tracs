@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import logging
 from datetime import date
 import numpy as np
 
@@ -8,10 +9,10 @@ from TRACM import pairsnp
 from .transcluster import calculate_trans_prob
 from .utils import check_positive_int, check_positive_float
 
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
 
 def distance_parser(parser):
-
     parser.description = "Estimates pairwise SNP and transmission distances between each pair of samples aligned to the same reference genome."
 
     io_opts = parser.add_argument_group("Input/output")
@@ -67,7 +68,7 @@ def distance_parser(parser):
         dest="recomb_filter",
         help="Filter out regions with unusually high SNP distances often caused by HGT",
         action="store_true",
-        default=False
+        default=False,
     )
 
     transdist = parser.add_argument_group("Transmission distance options")
@@ -102,9 +103,7 @@ def distance_parser(parser):
     transdist.add_argument(
         "--precision",
         dest="precision",
-        help=(
-            "The precision used to calculate E(K) (default=0.01)."
-        ),
+        help=("The precision used to calculate E(K) (default=0.01)."),
         type=check_positive_float,
         default=0.01,
     )
@@ -120,11 +119,11 @@ def distance_parser(parser):
     )
 
     parser.add_argument(
-        "--quiet",
-        dest="quiet",
-        help="turns off some console output",
-        action="store_true",
-        default=False,
+        "--loglevel",
+        type=str.upper,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set the logging threshold.",
     )
 
     parser.set_defaults(func=distance)
@@ -133,10 +132,15 @@ def distance_parser(parser):
 
 
 def distance(args):
+    # set logging up
+    logging.basicConfig(
+        level=args.loglevel,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     # Load dates
-    if not args.quiet:
-        print("Loading metadata...")
+    logging.info("Loading metadata...")
 
     if args.metadata is not None:
         dates = {}
@@ -146,32 +150,35 @@ def distance(args):
                 line = line.strip().split(",")
                 dates[line[0]] = (line[1], date.fromisoformat(line[1]))
 
-    if not args.quiet:
-        print("Estimating transmission distances...")
-    
+    logging.info("Estimating transmission distances...")
+
     with open(args.output_file, "w") as outfile:
         outfile.write(
             "sampleA,sampleB,date difference,SNP distance,transmission distance,expected K,filtered SNP distance\n"
         )
         for msa in args.msa_files:
             # Estimate SNP distances
-            if not args.quiet:
-                print("Calculating pairwise snp distances for %s" % msa)
+            logging.info("Calculating pairwise snp distances for %s", msa)
             # I, J, dist, names
             if args.msa_db is not None:
                 msas = [msa, args.msa_db]
             else:
                 msas = [msa]
-            
-            snp_dists = list(pairsnp(
-                fasta=msas, n_threads=args.n_cpu, dist=args.snp_threshold, filter=args.recomb_filter
-            ))
-            names = snp_dists[3]                
+
+            snp_dists = list(
+                pairsnp(
+                    fasta=msas,
+                    n_threads=args.n_cpu,
+                    dist=args.snp_threshold,
+                    filter=args.recomb_filter,
+                )
+            )
+            names = snp_dists[3]
 
             # Estimate transmission distances
             if args.metadata is not None:
-                if not args.quiet:
-                    print("Inferring transmission probabilities for %s" % msa)
+                logging.info("Inferring transmission probabilities for %s", msa)
+
                 if args.recomb_filter:
                     transmission_dists, expectedk, datediff = calculate_trans_prob(
                         snp_dists[:2] + [snp_dists[4]],
@@ -181,7 +188,7 @@ def distance(args):
                         beta=args.trans_rate,
                         samplenames=snp_dists[3],
                         log=False,
-                        precision=args.precision
+                        precision=args.precision,
                     )
                 else:
                     transmission_dists, expectedk, datediff = calculate_trans_prob(
@@ -192,13 +199,13 @@ def distance(args):
                         beta=args.trans_rate,
                         samplenames=snp_dists[3],
                         log=False,
-                        precision=args.precision
+                        precision=args.precision,
                     )
                     snp_dists[4] = ["NA"] * len(snp_dists[2])
 
             # Write output
-            if not args.quiet:
-                print("Saving distances for %s" % msa)
+            logging.info("Saving distances for %s", msa)
+
             if args.metadata is not None:
                 for i, j, dateD, snpD, expK, tranD, filtD in zip(
                     snp_dists[0],
@@ -207,7 +214,7 @@ def distance(args):
                     snp_dists[2],
                     expectedk,
                     transmission_dists,
-                    snp_dists[4]
+                    snp_dists[4],
                 ):
                     if (args.trans_threshold is None) or (args.trans_threshold >= expK):
                         outfile.write(
@@ -226,10 +233,7 @@ def distance(args):
                         )
             else:
                 for i, j, snpD, filtD in zip(
-                    snp_dists[0],
-                    snp_dists[1],
-                    snp_dists[2],
-                    snp_dists[4]
+                    snp_dists[0], snp_dists[1], snp_dists[2], snp_dists[4]
                 ):
                     outfile.write(
                         ",".join(
