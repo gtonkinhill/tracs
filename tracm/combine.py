@@ -117,31 +117,31 @@ def combine(args):
     alignments = defaultdict(list)
     for directory in args.directories:
         sample = os.path.basename(os.path.normpath(directory))
-        for aln in glob.iglob(os.path.join(directory, "*posterior_counts_ref_*.fasta")):
+        for aln in glob.iglob(os.path.join(directory, "*posterior_counts_ref_*.fasta*")):
             ref = find_ref(aln)
             alignments[ref].append((sample, aln))
 
-    # write out as gzipped multifasta files and calculate fraction of N's
+    # # write out as gzipped multifasta files and calculate fraction of N's
     ncovs = Parallel(n_jobs=args.n_cpu)(
         delayed(write_alignment)(ref, alns, args.output_dir, args.quiet)
             for ref, alns in alignments.items()
     )
     ncovs = ChainMap(*ncovs)
 
-    # calculate coverage
-    coverage = Parallel(n_jobs=args.n_cpu)(
-        delayed(calculate_coverage)(pileup)
-            for directory in args.directories
-            for pileup in glob.iglob(os.path.join(directory, "*_pileup.txt.gz"))
-    )
+    # # calculate coverage
+    # coverage = Parallel(n_jobs=args.n_cpu)(
+    #     delayed(calculate_coverage)(pileup)
+    #         for directory in args.directories
+    #         for pileup in glob.iglob(os.path.join(directory, "*_pileup.txt.gz"))
+    # )
 
     # merge and divide by length
     coverage_dict = {}
-    for sample, ref, cov, depth in coverage:
-        if (sample, ref) in ncovs:
-            coverage_dict[(sample, ref)] = (cov/ncovs[(sample, ref)][1], depth/cov, depth/ncovs[(sample, ref)][1])
-        else:
-            coverage_dict[(sample, ref)] = ("NA", depth/cov, "NA")
+    # for sample, ref, cov, depth in coverage:
+    #     if (sample, ref) in ncovs:
+    #         coverage_dict[(sample, ref)] = (cov/ncovs[(sample, ref)][1], depth/cov, depth/ncovs[(sample, ref)][1])
+    #     else:
+    #         coverage_dict[(sample, ref)] = ("NA", depth/cov, "NA")
 
 
     # process sourmash results and write to output file
@@ -156,7 +156,7 @@ def combine(args):
                         line = line.strip().split(",")
                         accession = line[9].split()[0].strip('"')
                         
-                        species = line[9].replace(accession, '').replace('"',).strip()
+                        species = line[9].replace(accession, '').replace('"','').strip()
                         
                         if (sample, accession) in coverage_dict:
                             cov = coverage_dict[(sample, accession)]

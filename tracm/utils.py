@@ -41,13 +41,13 @@ def run_gather(
     cache_size=0):
 
     # Hash query
-    run_sketch(
-        input_files=input_files,
-        prefix='query',
-        output=temp_dir + "query.sig",
-        ksize=ksize,
-        scaled=scaled
-    )
+    # run_sketch(
+    #     input_files=input_files,
+    #     prefix='query',
+    #     output=temp_dir + "query.sig",
+    #     ksize=ksize,
+    #     scaled=scaled
+    # )
 
     # Run Sourmash Gather
     cmd = "sourmash gather"
@@ -59,7 +59,7 @@ def run_gather(
 
     print(f"finding references...")
     print(f"command: {cmd}")
-    subprocess.run(cmd, shell=True, check=True)
+    # subprocess.run(cmd, shell=True, check=True)
 
     # Process results
     references = []

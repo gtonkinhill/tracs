@@ -130,6 +130,11 @@ def align_and_pileup(
     if not quiet:
         print("Generating alignment and pileup...")
 
+    if os.path.exists(prefix + "_pileup.txt.gz"):
+        print(f"Alignment already exists: {prefix}")
+        print(f"Continueing..")
+        return
+
     # run aligner
     temp_file = tempfile.NamedTemporaryFile(delete=False, dir=outdir)
     temp_file.close()
