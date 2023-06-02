@@ -6,7 +6,14 @@ SECONDS_IN_YEAR = 31556952.0
 
 
 def calculate_trans_prob(
-    sparse_snp_dist, sample_dates, K, lamb, beta, samplenames=None, log=False, precision=0.01
+    sparse_snp_dist,
+    sample_dates,
+    K,
+    lamb,
+    beta,
+    samplenames=None,
+    log=False,
+    precision=0.01,
 ):
     i = np.array(sparse_snp_dist[0])
     j = np.array(sparse_snp_dist[1])
