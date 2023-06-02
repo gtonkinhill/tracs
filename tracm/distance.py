@@ -154,7 +154,7 @@ def distance(args):
 
     with open(args.output_file, "w") as outfile:
         outfile.write(
-            "sampleA,sampleB,date difference,SNP distance,transmission distance,expected K,filtered SNP distance\n"
+            "sampleA,sampleB,date difference,SNP distance,transmission distance,expected K,filtered SNP distance,sites considered\n"
         )
         for msa in args.msa_files:
             # Estimate SNP distances
@@ -207,7 +207,7 @@ def distance(args):
             logging.info("Saving distances for %s", msa)
 
             if args.metadata is not None:
-                for i, j, dateD, snpD, expK, tranD, filtD in zip(
+                for i, j, dateD, snpD, expK, tranD, filtD, ncomp in zip(
                     snp_dists[0],
                     snp_dists[1],
                     datediff,
@@ -215,6 +215,7 @@ def distance(args):
                     expectedk,
                     transmission_dists,
                     snp_dists[4],
+                    snp_dists[5],
                 ):
                     if (args.trans_threshold is None) or (args.trans_threshold >= expK):
                         outfile.write(
@@ -227,13 +228,14 @@ def distance(args):
                                     str(tranD),
                                     str(expK),
                                     str(filtD),
+                                    str(ncomp),
                                 ]
                             )
                             + "\n"
                         )
             else:
-                for i, j, snpD, filtD in zip(
-                    snp_dists[0], snp_dists[1], snp_dists[2], snp_dists[4]
+                for i, j, snpD, filtD, ncomp in zip(
+                    snp_dists[0], snp_dists[1], snp_dists[2], snp_dists[4], snp_dists[5]
                 ):
                     outfile.write(
                         ",".join(
@@ -245,6 +247,7 @@ def distance(args):
                                 "NA",
                                 "NA",
                                 str(filtD),
+                                str(ncomp),
                             ]
                         )
                         + "\n"

@@ -284,7 +284,7 @@ size_t filter_recomb(boost::dynamic_bitset<> res) {
 
 inline std::tuple<std::vector<uint64_t>, std::vector<uint64_t>,
                   std::vector<uint64_t>, std::vector<std::string>, 
-                  std::vector<uint64_t>>
+                  std::vector<uint64_t>, std::vector<uint64_t>>
 pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool filter)
 {
 
@@ -335,6 +335,7 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool fil
   std::vector<std::vector<uint64_t>> rows(n_seqs);
   std::vector<std::vector<uint64_t>> cols(n_seqs);
   std::vector<std::vector<uint64_t>> distances(n_seqs);
+  std::vector<std::vector<uint64_t>> n_compared_sites(n_seqs);
   std::vector<std::vector<uint64_t>> filt_distances(n_seqs);
   uint64_t len = 0;
   bool interrupt = false;
@@ -351,6 +352,7 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool fil
     else
     {
       int d;
+      int nn;
       boost::dynamic_bitset<> res(seq_length);
 
       for (uint64_t j = std::max(j_start, i + 1); j < n_seqs; j++)
@@ -373,7 +375,14 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool fil
             uint64_t fd = filter_recomb(res);
             filt_distances[i].push_back(fd);
           }
+
+          // Count the number of compared sites (not N's)
+          res = A_snps[i] & C_snps[i] & G_snps[i] & T_snps[i];
+          res |= A_snps[j] & C_snps[j] & G_snps[j] & T_snps[j];
+          nn = seq_length - res.count();
+          n_compared_sites[i].push_back(nn);
         }
+        
       }
 
       len += distances[i].size();
@@ -395,8 +404,9 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool fil
   // Combine the lists from each thread
   std::vector<uint64_t> distances_all = combine_vectors(distances, len);
   std::vector<uint64_t> filt_distances_all = combine_vectors(filt_distances, len);
+  std::vector<uint64_t> n_compared_sites_all = combine_vectors(n_compared_sites, len);
   std::vector<uint64_t> rows_all = combine_vectors(rows, len);
   std::vector<uint64_t> cols_all = combine_vectors(cols, len);
 
-  return std::make_tuple(rows_all, cols_all, distances_all, seq_names, filt_distances_all);
+  return std::make_tuple(rows_all, cols_all, distances_all, seq_names, filt_distances_all, n_compared_sites_all);
 }

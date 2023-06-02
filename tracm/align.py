@@ -217,6 +217,16 @@ def download_ref(ref, outputdir):
     return refpath
 
 
+def find_fasta(root_dir, prefix):
+    converted_s = f"/{prefix[:3]}/{prefix[4:7]}/{prefix[7:10]}/{prefix[10:13]}/"
+    for file in glob.glob(root_dir + converted_s + "*.fna.gz"):
+        print(file)
+        return str(file)
+
+    raise ValueError("Could not download reference for: ", prefix)
+    return None
+
+
 def align(args):
     # set logging up
     logging.basicConfig(
@@ -323,8 +333,10 @@ def align(args):
             logging.warning(
                 "No references provided. Tracm will attempt to download references from Genbank"
             )
-            if not os.path.exists(args.output_dir + "genbank_references"):
-                os.mkdir(args.output_dir + "genbank_references")
+
+            if args.refseqs is None:
+                if not os.path.exists(args.output_dir + "genbank_references"):
+                    os.mkdir(args.output_dir + "genbank_references")
 
             # attempt to download references
             references = [r.split()[0].strip('"') for r in references]
@@ -332,12 +344,15 @@ def align(args):
             logging.debug("%s", references)
 
             for ref in references:
-                temprefdir = args.output_dir + "genbank_references/" + ref + "/"
-                if not os.path.exists(temprefdir):
-                    os.mkdir(temprefdir)
-                    ref_locs[ref] = download_ref(ref, temprefdir)
+                if args.refseqs is None:
+                    temprefdir = args.output_dir + "genbank_references/" + ref + "/"
+                    if not os.path.exists(temprefdir):
+                        os.mkdir(temprefdir)
+                        ref_locs[ref] = download_ref(ref, temprefdir)
+                    else:
+                        ref_locs[ref] = glob.glob(temprefdir + "*.fna.gz")[0]
                 else:
-                    ref_locs[ref] = glob.glob(temprefdir + "*.fna.gz")[0]
+                    ref_locs[ref] = find_fasta(args.refseqs, ref)
         else:
             with ZipFile(args.database, "r") as archive:
                 for ref in references:
@@ -558,6 +573,8 @@ def align(args):
             outfile.write(sequence + "\n")
 
     shutil.rmtree(temp_dir)
+
+    logging.info("Successfully completed align!")
 
     return
 
