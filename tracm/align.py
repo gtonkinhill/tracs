@@ -227,6 +227,16 @@ def find_fasta(root_dir, prefix):
     raise ValueError("Could not download reference for: ", prefix)
     return None
 
+def find_fasta(root_dir, prefix):
+    converted_s = f"/{prefix[:3]}/{prefix[4:7]}/{prefix[7:10]}/{prefix[10:13]}/"
+    for file in glob.glob(root_dir + converted_s + "*.fna.gz"):
+        print(file)
+        return str(file)
+
+    raise ValueError("Could not download reference for: ", prefix)
+    return None
+
+
 def align(args):
     # set logging up
     logging.basicConfig(
@@ -575,6 +585,8 @@ def align(args):
             outfile.write(sequence + "\n")
 
     shutil.rmtree(temp_dir)
+
+    logging.info("Successfully completed align!")
 
     return
 
