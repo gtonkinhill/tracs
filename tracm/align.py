@@ -144,8 +144,7 @@ def align_parser(parser):
         dest="error_threshold",
         default=0.01,
         help=(
-            "Threshold to exclude likely erroneous variants prior to"
-            + " fitting Dirichlet multinomial model"
+            "Threshold to exclude likely erroneous variants."
         ),
         type=float,
     )

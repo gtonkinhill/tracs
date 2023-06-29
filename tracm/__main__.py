@@ -7,6 +7,7 @@ from .distance import distance_parser
 from .align import align_parser
 from .cluster import cluster_parser
 from .combine import combine_parser
+from .pipe import pipe_parser
 
 
 def main():
@@ -33,6 +34,9 @@ def main():
 
     build_db_subparser = subparsers.add_parser("build-db")
     build_db_subparser = build_db_parser(build_db_subparser)
+
+    pipe_subparser = subparsers.add_parser("pipe")
+    pipe_subparser = pipe_parser(pipe_subparser)
 
     # parse arguments and run function
     args = parser.parse_args()

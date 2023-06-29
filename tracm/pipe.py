@@ -226,10 +226,10 @@ def pipe_parser(parser):
     cluster_opts.add_argument(
         "--cluster_distance",
         dest="distance",
-        help="The type of transmission distance to use. Can be one of 'SNP' (default), 'direct', 'expectedK'",
-        choices=["SNP", "direct", "expectedK"],
+        help="The type of transmission distance to use. Can be one of 'snp' (default), 'filter', 'direct', 'expectedK'",
+        choices=["snp", "filter", "direct", "expectedK"],
         type=str,
-        default="SNP"
+        default="snp"
     )
 
     # Other options
