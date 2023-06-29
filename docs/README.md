@@ -20,6 +20,8 @@ When dealing with a small number of samples, the [pipe](pipe.md) command can be 
 
 ## Examples
 
+Coming soon!
+
 ### Isolate
 
 ### Metagenomic
