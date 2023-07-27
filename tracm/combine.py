@@ -131,7 +131,7 @@ def combine(args):
     alignments = defaultdict(list)
     for directory in args.directories:
         sample = os.path.basename(os.path.normpath(directory))
-        for aln in glob.iglob(os.path.join(directory, "*posterior_counts_ref_*.fasta")):
+        for aln in glob.iglob(os.path.join(directory, "*posterior_counts_ref_*.fasta*")):
             ref = find_ref(aln)
             alignments[ref].append((sample, aln))
 
@@ -143,23 +143,24 @@ def combine(args):
     ncovs = ChainMap(*ncovs)
 
     # calculate coverage
-    coverage = Parallel(n_jobs=args.n_cpu)(
-        delayed(calculate_coverage)(pileup)
-        for directory in args.directories
-        for pileup in glob.iglob(os.path.join(directory, "*_pileup.txt.gz"))
-    )
+    # coverage = Parallel(n_jobs=args.n_cpu)(
+    #     delayed(calculate_coverage)(pileup)
+    #     for directory in args.directories
+    #     for pileup in glob.iglob(os.path.join(directory, "*_pileup.txt.gz"))
+    # )
 
     # merge and divide by length
+    # coverage_dict = {}
+    # for sample, ref, cov, depth in coverage:
+    #     if (sample, ref) in ncovs:
+    #         coverage_dict[(sample, ref)] = (
+    #             cov / ncovs[(sample, ref)][1],
+    #             depth / cov,
+    #             depth / ncovs[(sample, ref)][1],
+    #         )
+    #     else:
+    #         coverage_dict[(sample, ref)] = ("NA", depth / cov, "NA")
     coverage_dict = {}
-    for sample, ref, cov, depth in coverage:
-        if (sample, ref) in ncovs:
-            coverage_dict[(sample, ref)] = (
-                cov / ncovs[(sample, ref)][1],
-                depth / cov,
-                depth / ncovs[(sample, ref)][1],
-            )
-        else:
-            coverage_dict[(sample, ref)] = ("NA", depth / cov, "NA")
 
     # process sourmash results and write to output file
     with open(args.output_dir + "combined_metadata.csv", "w") as outfile:
@@ -178,18 +179,17 @@ def combine(args):
                         species = (
                             line[9]
                             .replace(accession, "")
-                            .replace(
-                                '"',
-                            )
+                            .replace('"', '')
                             .strip()
                         )
-
+                        
+                        if (sample, accession) in ncovs:
+                                ncov = str(ncovs[(sample, accession)][0])
+                        else:
+                            ncov = "NA"
+                        
                         if (sample, accession) in coverage_dict:
                             cov = coverage_dict[(sample, accession)]
-                            if (sample, accession) in ncovs:
-                                ncov = str(ncovs[(sample, accession)][0])
-                            else:
-                                ncov = "NA"
                             outfile.write(
                                 ",".join(
                                     [sample, accession]
@@ -209,7 +209,7 @@ def combine(args):
                                 ",".join(
                                     [sample, accession]
                                     + line[:4]
-                                    + ["NA", "NA", "NA", "NA", species]
+                                    + ["NA", "NA", "NA", ncov, species]
                                 )
                                 + "\n"
                             )

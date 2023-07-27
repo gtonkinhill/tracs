@@ -35,25 +35,25 @@ def run_gather(
     cache_size=0,
 ):
     # Hash query
-    # run_sketch(
-    #     input_files=input_files,
-    #     prefix="query",
-    #     output=temp_dir + "query.sig",
-    #     ksize=ksize,
-    #     scaled=scaled,
-    # )
+    run_sketch(
+        input_files=input_files,
+        prefix="query",
+        output=temp_dir + "query.sig",
+        ksize=ksize,
+        scaled=scaled,
+    )
 
-    # # Run Sourmash Gather
-    # cmd = "sourmash gather"
-    # cmd += " -o " + output + ".csv"
-    # cmd += " --threshold-bp " + str(threshold_bp)
-    # cmd += " --ignore-abundance"
-    # cmd += " " + temp_dir + "query.sig"
-    # cmd += " " + databasefile
+    # Run Sourmash Gather
+    cmd = "sourmash gather"
+    cmd += " -o " + output + ".csv"
+    cmd += " --threshold-bp " + str(threshold_bp)
+    cmd += " --ignore-abundance"
+    cmd += " " + temp_dir + "query.sig"
+    cmd += " " + databasefile
 
-    # logging.info(f"finding references...")
-    # logging.info(f"command: {cmd}")
-    # subprocess.run(cmd, shell=True, check=True)
+    logging.info(f"finding references...")
+    logging.info(f"command: {cmd}")
+    subprocess.run(cmd, shell=True, check=True)
 
     # Process results
     references = []

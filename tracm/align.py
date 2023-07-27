@@ -142,6 +142,14 @@ def align_parser(parser):
     )
 
     posterior.add_argument(
+        "--keep-cov-outliers",
+        dest="keep_cov_outliers",
+        help=("Turns off filtering of genome regions with unusual coverage. Useful if no gene gain/loss is expected."),
+        action="store_true",
+        default=False
+    )
+
+    posterior.add_argument(
         "--error-perc",
         dest="error_threshold",
         default=0.01,
@@ -387,42 +395,42 @@ def align(args):
         r2 = args.input_files[1]
 
     composite = False
-    # if composite:
-    #     align_and_pileup_composite(
-    #         ref_locs,
-    #         temp_dir,
-    #         args.output_dir + args.prefix,
-    #         r1,
-    #         r2=r2,
-    #         aligner="minimap2",
-    #         minimap_preset=args.minimap_preset,
-    #         minimap_params=None,
-    #         Q=args.min_base_qual,  # minimum base quality
-    #         q=args.min_map_qual,  # minimum mapping quality
-    #         l=args.min_query_len,  # minimum query length
-    #         V=args.max_div,  # ignore queries with per-base divergence >FLOAT [1]
-    #         T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
-    #         n_cpu=args.n_cpu,
-    #     )
-    # else:
-    #     for ref in references:
-    #         align_and_pileup(
-    #             ref_locs[ref],
-    #             temp_dir,
-    #             args.output_dir + args.prefix + "_ref_" + str(ref),
-    #             r1,
-    #             r2=r2,
-    #             aligner="minimap2",
-    #             minimap_preset=args.minimap_preset,
-    #             minimap_params=None,
-    #             Q=args.min_base_qual,  # minimum base quality
-    #             q=args.min_map_qual,  # minimum mapping quality
-    #             l=args.min_query_len,  # minimum query length
-    #             V=1,  # ignore queries with per-base divergence >FLOAT [1]
-    #             T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
-    #             max_div=args.max_div,
-    #             n_cpu=args.n_cpu,
-    #         )
+    if composite:
+        align_and_pileup_composite(
+            ref_locs,
+            temp_dir,
+            args.output_dir + args.prefix,
+            r1,
+            r2=r2,
+            aligner="minimap2",
+            minimap_preset=args.minimap_preset,
+            minimap_params=None,
+            Q=args.min_base_qual,  # minimum base quality
+            q=args.min_map_qual,  # minimum mapping quality
+            l=args.min_query_len,  # minimum query length
+            V=args.max_div,  # ignore queries with per-base divergence >FLOAT [1]
+            T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
+            n_cpu=args.n_cpu,
+        )
+    else:
+        for ref in references:
+            align_and_pileup(
+                ref_locs[ref],
+                temp_dir,
+                args.output_dir + args.prefix + "_ref_" + str(ref),
+                r1,
+                r2=r2,
+                aligner="minimap2",
+                minimap_preset=args.minimap_preset,
+                minimap_params=None,
+                Q=args.min_base_qual,  # minimum base quality
+                q=args.min_map_qual,  # minimum mapping quality
+                l=args.min_query_len,  # minimum query length
+                V=1,  # ignore queries with per-base divergence >FLOAT [1]
+                T=args.trim,  # ignore bases within INT-bp from either end of a read [0]
+                max_div=args.max_div,
+                n_cpu=args.n_cpu,
+            )
 
     # add empirical Bayes pseudocounts
     npos = {"A": 0, "C": 1, "G": 2, "T": 3}
@@ -495,17 +503,18 @@ def align(args):
 
         # calculate coverage threshold to handle differences in gene presence and absence
         cov_filter_threshold = 50
-        if (median_cov > cov_filter_threshold) and (
-            alphas[1] / np.sum(alphas) > expected_freq_threshold
-        ):
-            bad_cov_lower_bound = alphas[1] / expected_freq_threshold - np.sum(alphas)
+        if not args.keep_cov_outliers:
+            if (median_cov > cov_filter_threshold) and (
+                alphas[1] / np.sum(alphas) > expected_freq_threshold
+            ):
+                bad_cov_lower_bound = alphas[1] / expected_freq_threshold - np.sum(alphas)
 
-            lq = np.quantile(nz_cov, [0.25, 0.5])
-            bad_cov_upper_bound = lq[0] - 1.5 * (lq[1] - lq[0])
+                lq = np.quantile(nz_cov, [0.25, 0.5])
+                bad_cov_upper_bound = lq[0] - 1.5 * (lq[1] - lq[0])
 
-            if bad_cov_lower_bound < bad_cov_upper_bound:
-                logging.info(f"Lower coverage bound: {bad_cov_lower_bound}")
-                logging.info(f"Upper coverage bound: {bad_cov_upper_bound}")
+                if bad_cov_lower_bound < bad_cov_upper_bound:
+                    logging.info(f"Lower coverage bound: {bad_cov_lower_bound}")
+                    logging.info(f"Upper coverage bound: {bad_cov_upper_bound}")
 
         logging.info(f"Using frequency threshold: {expected_freq_threshold}")
 
@@ -542,18 +551,19 @@ def align(args):
             outfile.write(b"\n")
 
         # apply coverage filter
-        if (median_cov > cov_filter_threshold) and (
-            alphas[1] / np.sum(alphas) > expected_freq_threshold
-        ):
-            logging.info(
-                "Fraction of genome filtered by coverage: %s",
-                np.sum((rs < bad_cov_upper_bound) & (rs > bad_cov_lower_bound))
-                / len(rs),
-            )
-            if bad_cov_upper_bound > bad_cov_lower_bound:
-                all_counts[
-                    (rs <= bad_cov_upper_bound) & (rs >= bad_cov_lower_bound),
-                ] = 1
+        if not args.keep_cov_outliers:
+            if (median_cov > cov_filter_threshold) and (
+                alphas[1] / np.sum(alphas) > expected_freq_threshold
+            ):
+                logging.info(
+                    "Fraction of genome filtered by coverage: %s",
+                    np.sum((rs < bad_cov_upper_bound) & (rs > bad_cov_lower_bound))
+                    / len(rs),
+                )
+                if bad_cov_upper_bound > bad_cov_lower_bound:
+                    all_counts[
+                        (rs <= bad_cov_upper_bound) & (rs >= bad_cov_lower_bound),
+                    ] = 1
         all_counts[rs < args.min_cov,] = 1
 
         # generate fasta outputs
