@@ -8,14 +8,16 @@ import gzip
 from zipfile import ZipFile
 import tempfile
 import numpy as np
-from scipy.stats import norm, poisson
+# from scipy.stats import norm, poisson
 import pyfastx as fx
 import ncbi_genome_download as ngd
 import glob
+import pathlib
 
 from .utils import run_gather, generate_reads
 from .pileup import align_and_pileup, align_and_pileup_composite
 from .dirichlet_multinomial import find_dirichlet_priors
+
 from TRACM import calculate_posteriors
 
 from collections import Counter
@@ -149,6 +151,14 @@ def align_parser(parser):
     )
 
     posterior.add_argument(
+        "--keep-cov-outliers",
+        dest="keep_cov_outliers",
+        help=("Turns off filtering of genome regions with unusual coverage. Useful if no gene gain/loss is expected."),
+        action="store_true",
+        default=False
+    )
+
+    posterior.add_argument(
         "--error-perc",
         dest="error_threshold",
         default=0.01,
@@ -224,6 +234,14 @@ def download_ref(ref, outputdir):
 
     return refpath
 
+def find_fasta(root_dir, prefix):
+    converted_s = f"/{prefix[:3]}/{prefix[4:7]}/{prefix[7:10]}/{prefix[10:13]}/"
+    for file in glob.glob(root_dir + converted_s + "*.fna.gz"):
+        print(file)
+        return str(file)
+    
+    raise ValueError("Could not download reference for: ", prefix)
+    return None
 
 def find_fasta(root_dir, prefix):
     converted_s = f"/{prefix[:3]}/{prefix[4:7]}/{prefix[7:10]}/{prefix[10:13]}/"
@@ -311,6 +329,8 @@ def align(args):
         os.mkdir(args.output_dir)
     # make sure trailing forward slash is present
     args.output_dir = os.path.join(args.output_dir, "")
+    if args.refseqs is not None:
+        args.refseqs = os.path.join(args.refseqs, "")
     # Create temporary directory
     temp_dir = os.path.join(tempfile.mkdtemp(dir=args.output_dir), "")
     # temp_dir = args.output_dir + "temp/"
@@ -528,17 +548,18 @@ def align(args):
 
         # calculate coverage threshold to handle differences in gene presence and absence
         cov_filter_threshold = 50
-        if (median_cov > cov_filter_threshold) and (
-            alphas[1] / np.sum(alphas) > expected_freq_threshold
-        ):
-            bad_cov_lower_bound = alphas[1] / expected_freq_threshold - np.sum(alphas)
+        if not args.keep_cov_outliers:
+            if (median_cov > cov_filter_threshold) and (
+                alphas[1] / np.sum(alphas) > expected_freq_threshold
+            ):
+                bad_cov_lower_bound = alphas[1] / expected_freq_threshold - np.sum(alphas)
 
-            lq = np.quantile(nz_cov, [0.25, 0.5])
-            bad_cov_upper_bound = lq[0] - 1.5 * (lq[1] - lq[0])
+                lq = np.quantile(nz_cov, [0.25, 0.5])
+                bad_cov_upper_bound = lq[0] - 1.5 * (lq[1] - lq[0])
 
-            if bad_cov_lower_bound < bad_cov_upper_bound:
-                logging.info(f"Lower coverage bound: {bad_cov_lower_bound}")
-                logging.info(f"Upper coverage bound: {bad_cov_upper_bound}")
+                if bad_cov_lower_bound < bad_cov_upper_bound:
+                    logging.info(f"Lower coverage bound: {bad_cov_lower_bound}")
+                    logging.info(f"Upper coverage bound: {bad_cov_upper_bound}")
 
         logging.info(f"Using frequency threshold: {expected_freq_threshold}")
 
@@ -575,18 +596,19 @@ def align(args):
             outfile.write(b"\n")
 
         # apply coverage filter
-        if (median_cov > cov_filter_threshold) and (
-            alphas[1] / np.sum(alphas) > expected_freq_threshold
-        ):
-            logging.info(
-                "Fraction of genome filtered by coverage: %s",
-                np.sum((rs < bad_cov_upper_bound) & (rs > bad_cov_lower_bound))
-                / len(rs),
-            )
-            if bad_cov_upper_bound > bad_cov_lower_bound:
-                all_counts[
-                    (rs <= bad_cov_upper_bound) & (rs >= bad_cov_lower_bound),
-                ] = 1
+        if not args.keep_cov_outliers:
+            if (median_cov > cov_filter_threshold) and (
+                alphas[1] / np.sum(alphas) > expected_freq_threshold
+            ):
+                logging.info(
+                    "Fraction of genome filtered by coverage: %s",
+                    np.sum((rs < bad_cov_upper_bound) & (rs > bad_cov_lower_bound))
+                    / len(rs),
+                )
+                if bad_cov_upper_bound > bad_cov_lower_bound:
+                    all_counts[
+                        (rs <= bad_cov_upper_bound) & (rs >= bad_cov_lower_bound),
+                    ] = 1
         all_counts[rs < args.min_cov,] = 1
 
         # generate fasta outputs
@@ -600,9 +622,9 @@ def align(args):
         allelecount = Counter(sequence)
         logging.info(f"allelecount: {allelecount}")
 
-        if sequence.count("N") / (float(len(sequence))) > 0.25:
+        if sequence.count("N") / (float(len(sequence))) > 0.75:
             logging.info(
-                f"Skipping reference: {ref} as greater than 25% of the genome has completely ambiguous (N) base calls!"
+                f"Skipping reference: {ref} as greater than 75% of the genome has completely ambiguous (N) base calls!"
             )
             continue
 
