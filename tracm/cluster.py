@@ -59,10 +59,9 @@ def cluster_parser(parser):
         "-D",
         "--distance",
         dest="distance",
-        help="The type of transmission distance to use. Can be one of 'SNP', 'direct', 'expectedK'",
-        choices=["SNP", "direct", "expectedK"],
+        help="The type of transmission distance to use. Can be one of 'snp', 'filter', 'direct', 'expectedK'",
+        choices=["snp", "filter", "direct", "expectedK"],
         type=str,
-        default="SNP",
         required=True,
     )
 
@@ -88,8 +87,10 @@ def cluster(args):
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    if args.distance == "SNP":
+    if args.distance == "snp":
         col_index = 3
+    elif args.distance == "filter":
+        col_index = 6
     elif args.distance == "direct":
         col_index = 4
     elif args.distance == "expectedK":
