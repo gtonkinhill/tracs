@@ -176,7 +176,7 @@ def distance(args):
             names = snp_dists[3]
 
             # Estimate transmission distances
-            if args.metadata is not None:
+            if (args.metadata is not None) and (len(snp_dists[0])>0):
                 logging.info("Inferring transmission probabilities for %s", msa)
 
                 if args.recomb_filter:
@@ -206,7 +206,7 @@ def distance(args):
             # Write output
             logging.info("Saving distances for %s", msa)
 
-            if args.metadata is not None:
+            if (args.metadata is not None) and (len(snp_dists[0])>0):
                 for i, j, dateD, snpD, expK, tranD, filtD, ncomp in zip(
                     snp_dists[0],
                     snp_dists[1],

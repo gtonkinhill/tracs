@@ -132,6 +132,15 @@ def align_parser(parser):
     posterior = parser.add_argument_group("Posterior count estimates")
 
     posterior.add_argument(
+        "--consensus",
+        dest="consensus",
+        default=False,
+        help=("Turns on consensus mode. Only the most common allele at each site will be reported and all other filters will be ignored."),
+        action="store_true",
+        default=False,
+    )
+
+    posterior.add_argument(
         "--min-cov",
         dest="min_cov",
         default=5,
@@ -444,6 +453,43 @@ def align(args):
                 all_counts[contig][pos, :] = counts
         all_counts = np.concatenate(list(all_counts.values()))
 
+
+
+        if args.consensus:
+            logging.info("Consensus requested. Skipping all coverage filters!")
+            # generate fasta outputs
+            all_counts_01 = np.zeros_like(all_counts, dtype=bool)
+            max_indices = np.argmax(all_counts, axis=1)
+            all_counts_01[np.arange(all_counts.shape[0]), max_indices] = True
+            sequence = (
+                iupac_codes[
+                    np.packbits(all_counts_01 > 0, axis=1, bitorder="little").flatten()
+                ]
+                .tobytes()
+                .decode("utf-8")
+            )
+            allelecount = Counter(sequence)
+            logging.info(f"allelecount: {allelecount}")
+
+            if sequence.count("N") / (float(len(sequence))) > 0.25:
+                logging.info(
+                    f"Skipping reference: {ref} as greater than 25% of the genome has completely ambiguous (N) base calls!"
+                )
+                continue
+
+            with open(
+                args.output_dir
+                + args.prefix
+                + "_posterior_counts_ref_"
+                + str(ref)
+                + ".fasta",
+                "w",
+            ) as outfile:
+                outfile.write(">" + args.prefix + "_" + str(ref) + "\n")
+                outfile.write(sequence + "\n")
+
+            continue
+            
         # minimum coverage
         rs = np.sum(all_counts, 1)
         nz_cov = np.sum(all_counts[rs > 0,], 1)
