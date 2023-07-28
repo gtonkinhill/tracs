@@ -116,6 +116,14 @@ def pipe_parser(parser):
     posterior = parser.add_argument_group("Posterior count estimates")
 
     posterior.add_argument(
+        "--consensus",
+        dest="consensus",
+        help=("Turns on consensus mode. Only the most common allele at each site will be reported and all other filters will be ignored."),
+        action="store_true",
+        default=False,
+    )
+
+    posterior.add_argument(
         "--min-cov",
         dest="min_cov",
         default=5,

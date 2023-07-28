@@ -136,7 +136,6 @@ def align_parser(parser):
     posterior.add_argument(
         "--consensus",
         dest="consensus",
-        default=False,
         help=("Turns on consensus mode. Only the most common allele at each site will be reported and all other filters will be ignored."),
         action="store_true",
         default=False,
@@ -472,8 +471,6 @@ def align(args):
                     counts[npos[nuc]] = c1 + c2
                 all_counts[contig][pos, :] = counts
         all_counts = np.concatenate(list(all_counts.values()))
-
-
 
         if args.consensus:
             logging.info("Consensus requested. Skipping all coverage filters!")
