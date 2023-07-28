@@ -40,6 +40,15 @@ def pipe_parser(parser):
     )
 
     io_opts.add_argument(
+        "--refseqs",
+        dest="refseqs",
+        help="path to reference fasta files",
+        type=os.path.abspath,
+        default=None,
+    )
+
+
+    io_opts.add_argument(
         "-o",
         "--output",
         dest="output_dir",
@@ -131,6 +140,14 @@ def pipe_parser(parser):
             "Minimum read coverage (default=5)."
         ),
         type=int,
+    )
+
+    posterior.add_argument(
+        "--keep-cov-outliers",
+        dest="keep_cov_outliers",
+        help=("Turns off filtering of genome regions with unusual coverage. Useful if no gene gain/loss is expected."),
+        action="store_true",
+        default=False
     )
 
     posterior.add_argument(

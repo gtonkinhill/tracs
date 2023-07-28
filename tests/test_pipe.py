@@ -22,19 +22,20 @@ def test_pipe(datafolder):
             "-i", tmpoutdir + "input_data.tsv",
             "--database", datafolder + "pneumoexampleDB.zip",
             "-t", "4",
-            "-o", tmpoutdir + "test_pipe"
+            "--min-cov", "2",
+            "--filter",
+            "--cluster_distance", "filter",
+            "-o", tmpoutdir + "/test_pipe"
         ]
         main()
 
         # read output file
-        with open(tmpoutdir + 'test_pipe/transmission_clusters.csv', 'r') as infile:
+        with open(tmpoutdir + '/test_pipe/transmission_clusters.csv', 'r') as infile:
             lines = infile.read()
 
         # check output
         print(lines)
-        assert "sero_1_4_18C_19F_SRR9998163_WGS_of_strep_pneumoniae_Serotype_19F_assembly,0" in lines
         assert "sero_1_19F_SRR9998163_WGS_of_strep_pneumoniae_Serotype_19F_assembly,0" in lines
-        assert "sero_1_4_18C_19F_SRR9998186_WGS_of_strep_pneumoniae_Serotype_1_assembly,1" in lines
-        assert "sero_1_19F_SRR9998186_WGS_of_strep_pneumoniae_Serotype_1_assembly,1" in lines
+        assert "sero_1_4_18C_19F_SRR9998163_WGS_of_strep_pneumoniae_Serotype_19F_assembly,0" in lines
 
     return

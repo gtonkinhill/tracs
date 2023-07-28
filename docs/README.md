@@ -22,7 +22,17 @@ When dealing with a small number of samples, the [pipe](pipe.md) command can be 
 
 Coming soon!
 
+All files needed to run these examples are provided [here](github.com).
+
 ### Isolate
+
+
+
+#### Starting from a MSA
+
+#### Starting from sequencing reads
+
+
 
 ### Metagenomic
 

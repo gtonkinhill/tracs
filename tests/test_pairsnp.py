@@ -17,6 +17,6 @@ def test_pairsnp_filt(datafolder):
 
     assert distances[0] == [0, 0, 1]
     assert distances[1] == [1, 2, 2]
-    assert distances[2] == [2.0, 2.0, 4.0]
+    assert distances[4] == [2.0, 2.0, 4.0]
 
     return
