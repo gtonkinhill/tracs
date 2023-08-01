@@ -20,20 +20,24 @@ When dealing with a small number of samples, the [pipe](pipe.md) command can be 
 
 ## Examples
 
-Coming soon!
-
 All files needed to run these examples are provided [here](github.com).
 
 ### Isolate
 
+Isolate data can either be generated using the align command or using alternative pipelines such as [Snippy](https://github.com/tseemann/snippy). 
 
+#### SARS-CoV-2
 
-#### Starting from a MSA
+We consider a multiple sequence alignment of SARS-CoV-2 genomes from Tonkin-Hill, Martinconera et al., *Elife* 2021. Here, we are assuming a transmission generation time of 5 days (5/356 = 73) and a clock rate of 1e-3 per base per year (1e-3 * 29903 = 29.03). The sample dates are proved as a csv formatted file with one sample per line. 
 
-#### Starting from sequencing reads
+As we do not expect much recombination within these sample we do not use the `--filter` parameter.
 
-
+```
+tracm distance --msa MA_combined_consensus_replicates_filt_dates.fa  --meta combined_consensus_replicates_filt_dates.csv -o test.out --trans_rate 73 --clock_rate 29.03
+```
 
 ### Metagenomic
+
+
 
 ### Multi-strain

@@ -472,12 +472,19 @@ def align(args):
                 all_counts[contig][pos, :] = counts
         all_counts = np.concatenate(list(all_counts.values()))
 
+        # minimum coverage
+        rs = np.sum(all_counts, 1)
+        nz_cov = np.sum(all_counts[rs > 0,], 1)
+        total_cov = np.sum(rs > 0) / all_counts.shape[0]
+        median_cov = np.median(nz_cov)
+
         if args.consensus:
             logging.info("Consensus requested. Skipping all coverage filters!")
             # generate fasta outputs
-            all_counts_01 = np.zeros_like(all_counts, dtype=bool)
+            all_counts_01 = np.zeros_like(all_counts, dtype=int)
             max_indices = np.argmax(all_counts, axis=1)
-            all_counts_01[np.arange(all_counts.shape[0]), max_indices] = True
+            all_counts_01[np.arange(all_counts.shape[0]), max_indices] = 1
+            all_counts_01[rs < args.min_cov,] = 1
             sequence = (
                 iupac_codes[
                     np.packbits(all_counts_01 > 0, axis=1, bitorder="little").flatten()
@@ -507,11 +514,7 @@ def align(args):
 
             continue
             
-        # minimum coverage
-        rs = np.sum(all_counts, 1)
-        nz_cov = np.sum(all_counts[rs > 0,], 1)
-        total_cov = np.sum(rs > 0) / all_counts.shape[0]
-        median_cov = np.median(nz_cov)
+        
 
         # calculate minimum frequency threshold
         expected_freq_threshold = max(args.min_cov / median_cov, args.error_threshold)

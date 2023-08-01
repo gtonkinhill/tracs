@@ -73,6 +73,7 @@ def run_gather(
     pcov = potential[0][0]
     for line in potential:
         if (line[2] >= p_match) or (prev and (line[0] / pcov >= 0.98)):
+            logging.debug(line)
             logging.info(f"Using reference: {line[8]}")
             references.append(line[9])
         else:
