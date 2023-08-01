@@ -154,7 +154,7 @@ def distance(args):
 
     with open(args.output_file, "w") as outfile:
         outfile.write(
-            "sampleA,sampleB,date difference,SNP distance,transmission distance,expected K,filtered SNP distance,sites considered\n"
+            "sampleA,sampleB,date difference,SNP distance,transmission distance,expected K,filtered SNP distance,sites considered,MSA file\n"
         )
         for msa in args.msa_files:
             # Estimate SNP distances
@@ -205,6 +205,8 @@ def distance(args):
 
             # Write output
             logging.info("Saving distances for %s", msa)
+            ref = os.path.basename(msa).split(".")[0]
+            ref = ref.replace("_combined", "")
 
             if (args.metadata is not None) and (len(snp_dists[0])>0):
                 for i, j, dateD, snpD, expK, tranD, filtD, ncomp in zip(
@@ -229,6 +231,7 @@ def distance(args):
                                     str(expK),
                                     str(filtD),
                                     str(ncomp),
+                                    ref
                                 ]
                             )
                             + "\n"
@@ -248,6 +251,7 @@ def distance(args):
                                 "NA",
                                 str(filtD),
                                 str(ncomp),
+                                ref
                             ]
                         )
                         + "\n"
