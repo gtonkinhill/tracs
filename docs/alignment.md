@@ -44,7 +44,7 @@ tracm align -i read_file_1.fq read_file_2.fq --database gtdb-rs207.genomic-reps.
 
 #### Species level and custom databases
 
-Finally, it possible to run Trac'm using a custom database generated using the [database]() command. Pre-compiled version of the for S. pneumoniae is available [here]().
+Finally, it possible to run Trac'm using a custom database generated using the [build-db](database.md) command. Pre-compiled version of the for *S. pneumoniae* is available [here]().
 
 ```
 tracm align -i read_file_1.fq read_file_2.fq --database reference_db.zip -o output_folder -p sample_name
