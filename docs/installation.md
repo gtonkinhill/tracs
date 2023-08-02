@@ -2,7 +2,16 @@
 
 ## Conda
 
-Coming soon...
+A proper install is coming soon.
+
+In the mean time, Trac'm can be installed using conda by running
+
+```
+conda create -n tracm python=3.10
+conda activate tracm
+conda install -c bioconda samtools htsbox minimap2
+pip3 install git+https://github.com/gtonkinhill/tracm
+```
 
 ## Manual
 
