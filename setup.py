@@ -1,5 +1,4 @@
 from setuptools import setup, Extension, find_packages
-import pybind11
 import platform
 from glob import glob
 from pybind11.setup_helpers import Pybind11Extension, build_ext
@@ -76,7 +75,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/gtonkinhill/tracm",
     install_requires=[
-        'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'pybind11', 'ncbi_genome_download'
+        'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'ncbi_genome_download'
     ],
     python_requires='>=3.6.0',
     packages=['tracm'],
