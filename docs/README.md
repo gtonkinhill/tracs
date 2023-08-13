@@ -6,7 +6,7 @@ Trac'm provides robust estimates of pairwise transmission distances from single 
 
 The Trac'm package consists of several modules that can be used independently. 
 
-<center><img src="../_figures/tracm_flow.drawio.svg" width="700"></center>
+<center><img src="_figures/tracm_flow.drawio.svg" width="700"></center>
 
 If you already have a Multiple Sequence Alignment (MSA) you can jump straight to the [distance](distance.md) command.
 

@@ -1,6 +1,6 @@
 <!-- _coverpage.md -->
 
-<img src="../_figures/tracm_logo.png" width="370">
+<img src="_figures/tracm_logo.png" width="370">
 <!-- ![logo](_figures/tracm_logo.jpeg) { width: 100px; } -->
 
 
