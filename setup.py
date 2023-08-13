@@ -77,7 +77,7 @@ setup(
     install_requires=[
         'numpy', 'scipy', 'plotly', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'ncbi_genome_download'
     ],
-    python_requires='>=3.6.0',
+    python_requires='>=3.9.0',
     packages=['tracm'],
     keywords='transmission clustering metagenomics',
     classifiers=[
