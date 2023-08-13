@@ -1,4 +1,5 @@
 from setuptools import setup, Extension, find_packages
+import pybind11
 import platform
 from glob import glob
 from pybind11.setup_helpers import Pybind11Extension, build_ext
