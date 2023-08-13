@@ -62,13 +62,13 @@ jobs:
 
     - name: Download test data
       run: |
-        wget https://github.com/gtonkinhill/tracm-test-data/archive/refs/tags/v0.0.1.zip
-        unzip v0.0.1.zip
+        wget https://github.com/gtonkinhill/tracm-test-data/archive/refs/tags/v0.0.2.zip
+        unzip v0.0.2.zip
         
     - name: Install
       run: python setup.py install
 
     - name: Validation Tests
-      run: pytest -W ignore -q --datafolder="${{ github.workspace }}/tracm-test-data-0.0.1/"
+      run: pytest -W ignore -q --datafolder="${{ github.workspace }}/tracm-test-data-0.0.2/"
 
 
