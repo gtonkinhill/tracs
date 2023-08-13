@@ -30,6 +30,7 @@ jobs:
     - name: Install dependencies
       run: | 
           sudo apt-get update && sudo apt-get install -y build-essential wget zlib1g-dev libncurses5-dev libbz2-dev liblzma-dev
+          sudo apt-get install -y libboost-all-dev
           sudo apt-get install -y python3-pybind11
           python --version
           python -m pip install --upgrade pip
