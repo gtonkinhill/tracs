@@ -1,5 +1,7 @@
 # Trac'm
 
+[![tracm-CI](https://github.com/gtonkinhill/tracm/actions/workflows/tracm_test.yml/badge.svg)](https://github.com/gtonkinhill/tracm/actions/workflows/tracm_test.yml)
+
 <p align="center">
 <img src="https://github.com/gtonkinhill/tracm/blob/main/docs/_figures/tracm_logo.png" alt="alt text" width="500">
 </p>
