@@ -21,9 +21,9 @@ jobs:
       matrix:
         python-version: [3.8, 3.9, '3.10']
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -32,9 +32,8 @@ jobs:
           sudo apt-get update && sudo apt-get install -y build-essential wget zlib1g-dev libncurses5-dev libbz2-dev liblzma-dev
           python --version
           python -m pip install --upgrade pip
-          sudo pip install pybind11
-          pip install -U pytest
-          
+          python -m pip install pybind11 pytest
+          python -m pip install -U pytest
     
     - name: Install Minimap2
       run: |
