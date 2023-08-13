@@ -30,10 +30,12 @@ jobs:
     - name: Install dependencies
       run: | 
           sudo apt-get update && sudo apt-get install -y build-essential wget zlib1g-dev libncurses5-dev libbz2-dev liblzma-dev
+          sudo apt-get install -y python3-pybind11
           python --version
           python -m pip install --upgrade pip
           python -m pip install pybind11 pytest
-          python -m pip install -U pytest
+          # Check if pybind11 was installed correctly
+          python -m pip list | grep pybind11
     
     - name: Install Minimap2
       run: |
