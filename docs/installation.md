@@ -2,9 +2,9 @@
 
 ## Conda
 
-A proper install is coming soon.
+A proper Conda install is coming soon.
 
-In the mean time, Trac'm can be installed using conda by running
+In the meantime, Trac'm can be installed using conda by running
 
 ```
 conda create -n tracm python=3.10

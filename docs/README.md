@@ -48,7 +48,7 @@ tracm distance --msa MA_combined_consensus_replicates_filt_dates.fa  --meta comb
 
 To cluster the inferred distances we can run the [cluster](cluster.md) command.
 
-Clustering can be performed using a number of different distance metrics including SNP and the estimated number of intermediate hosts according to the Trac'm model. In the case we use the latter and choose a threshold of 5 intermediate hosts to separate clusters.
+Clustering can be performed using several different distance metrics including SNP and the estimated number of intermediate hosts according to the Trac'm model. In this case, we use the latter and choose a threshold of 5 intermediate hosts to separate clusters.
 
 ```
 tracm cluster -d transmission_distances.csv -D expectedK -c 5 -o clusters.csv
@@ -56,7 +56,7 @@ tracm cluster -d transmission_distances.csv -D expectedK -c 5 -o clusters.csv
 
 ### Metagenomic
 
-For the matagenomics example, we consider a pair of simulated human gut microbiome samples. The simulated proportions for each species and the respective SNP distances is provided in the `simulated_proportions.csv` file.
+For the metagenomics example, we consider a pair of simulated human gut microbiome samples. The simulated proportions for each species and the respective SNP distances are provided in the `simulated_proportions.csv` file.
 
 #### Align
 
@@ -93,13 +93,13 @@ tracm distance --msa ./combined_alignments/*.fasta.gz -o transmission_distances.
 
 ### Multi-strain
 
-Here we consider two labratory mixtures of pneumococcal strains originally published in Knight et al., *Microbial Genomics* 2021. The first contains strains of serotype 1 and 19F. The second contains the same two serotypes in addition to serotypes 4 and 18C. 
+Here we consider two laboratory mixtures of pneumococcal strains originally published in Knight et al., *Microbial Genomics* 2021. The first contains strains of serotype 1 and 19F. The second contains the same two serotypes in addition to serotypes 4 and 18C. 
 
 We use a custom database of pneumococcal reference genomes provided as part of this example (pneumoexampleDB.zip) which was built using the [build-db](database.md) command.
 
 #### Align
 
-First we align the samples in a similar way to the metagenomics example.
+First, we align the samples in a similar way to the metagenomics example.
 
 ```
 tracm align -i subset_SRR9998185_WGS_of_strep_pneumoniae_Serotype_mixture_1_19F_*.fastq.gz -o sampleA --prefix sampleA --keep-all -t 20 --database pneumoexampleDB.zip
