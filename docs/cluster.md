@@ -10,7 +10,7 @@ tracm cluster -d transmission_distances.csv -o clusters.csv -D filter -c 10
 
 ### Output
 
-The resulting clustering is formatted as a comma separated file with the sample name followed by its cluster. For example, the following output indicates that samples A and B belong to the same transmission cluster while C is in a separate cluster.
+The resulting clustering is formatted as a comma-separated file with the sample name followed by its cluster. For example, the following output indicates that samples A and B belong to the same transmission cluster while C is in a separate cluster.
 
 ```
 sample,cluster

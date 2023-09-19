@@ -2,7 +2,7 @@
 
 The pipe command can be used to run the full Trac'm pipeline on a set of samples. It is most useful when considering a small number of samples. It is usually better to run large datasets in stages, which makes it easier to run multiple `align` commands in parallel.
 
-The `pipe` command takes a text file as input with the sample name followed by the sequencing data in the subsequent columns. These can either be paired end read files, a single combined read file, or an assembly. An example of the format is given below.
+The `pipe` command takes a text file as input with the sample name followed by the sequencing data in the subsequent columns. These can either be paired-end read files, a single combined read file, or an assembly. An example of the format is given below.
 
 ```
 prefix  read1 read2

@@ -2,7 +2,7 @@
 
 The **distance** command rapidly calculates pairwise SNP and transmission distance estimates. It accepts a FASTA formatted multiple sequence alignment as input and is aware of IUPAC ambiguity codes. Transmission distance is estimated using a modified version of the [TransCluster](https://doi.org/10.1093/molbev/msy242) algorithm and will only be calculated if both the clock and transmission rate parameters are set.
 
-Trac'm inlcudes a filtering strategy to account for problematic regions in alignments. These are usually the result of shared homology between species and strains within mixed samples or by hard to align regions of the genome. This can be enabled using the `--filter` option.
+Trac'm includes a filtering strategy to account for problematic regions in alignments. These are usually the result of shared homology between species and strains within mixed samples or by hard-to-align regions of the genome. This can be enabled using the `--filter` option.
 
 It is recommended that a maximum SNP distance is set to speed up the algorithm and reduce the size of the output file. This is calculated before any filtering is done and thus it is recommended that it be an order of magnitude larger than the minimum SNP distance of interest.
 
@@ -10,7 +10,7 @@ It is recommended that a maximum SNP distance is set to speed up the algorithm a
 
 ### Simple SNP distance
 
-To run the **distance** command on a MSA file called "msa.fasta" with filtering and a minimum SNP distance of 1000 you can use the following command.
+To run the **distance** command on an MSA file called "msa.fasta" with filtering and a minimum SNP distance of 1000 you can use the following command.
 
 ```
 tracm distance -i msa.fasta -o transmission_distances.csv --snp_threshold 1000 --filter
