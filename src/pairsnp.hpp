@@ -6,6 +6,8 @@
 #include <string>
 #include <zlib.h>
 #include <map>
+#include <cstdlib> 
+#include <signal.h>
 
 #include "kseq.h"
 
@@ -13,6 +15,14 @@
 #include <boost/math/distributions/binomial.hpp>
 
 using namespace std;
+
+volatile bool stop_requested = false;  // shared flag
+
+void handle_signal(int signal) {
+    if (signal == SIGINT) {
+        stop_requested = true;  // set the flag if Ctrl+C is pressed
+    }
+}
 
 template <typename T>
 std::vector<T> combine_vectors(const std::vector<std::vector<T>> &vec,
@@ -193,6 +203,15 @@ std::pair<size_t, size_t> load_seqs(std::string fasta,
     T_snps.push_back(Ts);
 
     count++;
+
+    try {
+        if (PyErr_CheckSignals() != 0) {
+            throw std::runtime_error("Keyboard interrupt");
+        }
+    } catch (const std::runtime_error&) {
+        std::cerr << "Interrupted by user!" << std::endl;
+        exit(1);
+    }
   }
   kseq_destroy(seq);
   gzclose(fp);
@@ -206,15 +225,18 @@ std::pair<size_t, size_t>  range_count(const boost::dynamic_bitset<> &bit_set, s
         throw std::out_of_range("Invalid range specified.");
     }
 
+    bool first = true;
     size_t count = 0;
     size_t pos = bit_set.find_first();
     size_t left = 0;
     size_t length;
 
+
     while (pos != boost::dynamic_bitset<>::npos && pos < end) {
         if (pos >= start) {
-            if (left == 0) {
+            if (first) {
                 left = pos;
+                first = false;
             }
             count++;
             length = pos-left+1;
@@ -227,11 +249,17 @@ std::pair<size_t, size_t>  range_count(const boost::dynamic_bitset<> &bit_set, s
 
 
 size_t filter_recomb(boost::dynamic_bitset<> res) {
+
   // Invert to look at SNPs
   res.flip();
 
   // Determine window size
   double d = static_cast<double>(res.count());
+
+  if (d <= 1){
+    return static_cast<size_t>(d);
+  }
+
   int aln_length = res.size();
 
   double p = d / aln_length;
@@ -264,6 +292,13 @@ size_t filter_recomb(boost::dynamic_bitset<> res) {
 
 
     if (window_count.second > 1){
+
+      // try {
+      if (window_count.first < window_count.second) {
+          stop_requested = true;
+          throw std::out_of_range("Invalid input to binomial CDF!");
+      }
+
       p_value = 1.0 - cached_binomial_cdf(window_count.first, p, window_count.second);
       // p_value = 1.0 - cached_binomial_cdf(right-left, p, window_count.second);
 
@@ -287,6 +322,8 @@ inline std::tuple<std::vector<uint64_t>, std::vector<uint64_t>,
                   std::vector<uint64_t>, std::vector<uint64_t>>
 pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool filter)
 {
+  // handle a stop signal 
+  signal(SIGINT, handle_signal);  
 
   // open filename and initialise kseq
   uint64_t n_seqs = 0;
@@ -345,9 +382,9 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool fil
   for (uint64_t i = 0; i < i_end; i++)
   {
     // Cannot throw in an openmp block, short circuit instead
-    if (interrupt || PyErr_CheckSignals() != 0)
+    if (stop_requested || PyErr_CheckSignals() != 0)
     {
-      interrupt = true;
+      stop_requested = true;
     }
     else
     {
@@ -394,8 +431,17 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool fil
     }
   }
 
+  try {
+      if (stop_requested) {
+          throw std::runtime_error("Keyboard interrupt");
+      }
+  } catch (const std::runtime_error&) {
+      std::cerr << "Interrupted by user!" << std::endl;
+      exit(1);
+  }
+
   // // Finalise
-  // if (interrupt) {
+  // if (stop_requested) {
   //   check_interrupts();
   // } else {
   //   dist_progress.finalise();
