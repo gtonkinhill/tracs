@@ -495,9 +495,9 @@ def align(args):
             allelecount = Counter(sequence)
             logging.info(f"allelecount: {allelecount}")
 
-            if sequence.count("N") / (float(len(sequence))) > 0.25:
+            if sequence.count("N") / (float(len(sequence))) > 0.75:
                 logging.info(
-                    f"Skipping reference: {ref} as greater than 25% of the genome has completely ambiguous (N) base calls!"
+                f"Skipping reference: {ref} as less than 25% of the genome has sufficient read coverage."
                 )
                 continue
 
