@@ -6,7 +6,9 @@
 <img src="https://github.com/gtonkinhill/tracm/blob/main/docs/_figures/tracm_logo.png" alt="alt text" width="500">
 </p>
 
-Trac'm provides robust estimates of pairwise transmission distances from single isolate, multi-strain and metagenomic samples. It uses an empirical Bayes approach to account for variable sequence coverage and aligns to multiple reference genomes to estimate a lower bound for both the SNP distance and the number of intermediate hosts seperating two samples.
+Trac'm provides robust estimates of pairwise transmission distances from single isolate, multi-strain and metagenomic samples. It uses an empirical Bayes approach to account for variable sequence coverage and aligns to multiple reference genomes to estimate a **lower bound** for both the SNP distance and the number of intermediate hosts seperating two samples.
+
+**Note: Trac'm is not intended to estimate very large SNP distances**
 
 ## Documentation
 
