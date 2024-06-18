@@ -41,7 +41,6 @@ jobs:
     - name: Install python dependencies
       run: |
           pip install scipy --prefer-binary
-          pip install importlib-metadata
   
     - name: Install Minimap2
       run: |
@@ -71,7 +70,7 @@ jobs:
         unzip v0.0.2.zip
         
     - name: Install
-      run: python setup.py install
+      run: pip install .
 
     - name: Validation Tests
       run: pytest -W ignore -q --datafolder="${{ github.workspace }}/tracm-test-data-0.0.2/"
