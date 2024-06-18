@@ -156,7 +156,7 @@ def main():
     cmd += " -o " + dirPA
     cmd += " --print_clades_only"
     cmd += " -d " + emDB
-    cmd += " --marker_in_n_samples 1 --sample_with_n_markers 1"
+    # cmd += " --marker_in_n_samples 100 --sample_with_n_markers 1"
     print("running cmd: " + cmd)
     subprocess.run(cmd, shell=True, check=True)
 
@@ -195,7 +195,7 @@ def main():
         cmd += " -o " + dirMA + spec
         cmd += " -c " + spec
         cmd += " -d " + args.refDB
-        cmd += " --marker_in_n_samples 1 --sample_with_n_markers 1"
+        # cmd += " --marker_in_n_samples 100 --sample_with_n_markers 1"
         print("running cmd: " + cmd)
         subprocess.run(cmd, shell=True, check=True)
 

@@ -46,6 +46,9 @@ def align_and_pileup_composite(
     # run aligner
     temp_file = outdir + prefix + "_composite_aln.bam"
 
+    if os.path.exists(temp_file):
+        return(temp_file)
+
     if aligner == "minimap2":
         cmd = "minimap2"
         cmd += " -t " + str(n_cpu)
@@ -229,6 +232,7 @@ def main():
         cmd += " " + dirA + 'composite_reference.fasta'
         cmd += " --stb " + dirA + 'composite_reference.txt'
         cmd += " -o " + dirT
+        cmd + " --skip_plot_generation"
         cmd += " -p " + str(args.n_cpu)
         # cmd += " --pairing_filter all_reads"
         print("running cmd: " + cmd)

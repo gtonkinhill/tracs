@@ -33,11 +33,14 @@ jobs:
           sudo apt-get install -y libboost-all-dev
           sudo apt-get install -y python3-pybind11
           python --version
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools
           python -m pip install pybind11 pytest
           # Check if pybind11 was installed correctly
           python -m pip list | grep pybind11
-    
+          
+    - name: Install python dependencies
+      run: pip install scipy --prefer-binary
+  
     - name: Install Minimap2
       run: |
         wget https://github.com/lh3/minimap2/releases/download/v2.26/minimap2-2.26_x64-linux.tar.bz2

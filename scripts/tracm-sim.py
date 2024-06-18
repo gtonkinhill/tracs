@@ -64,8 +64,8 @@ def generate_reads(genomes, depths, platform, prefix, outputdir, quiet=False):
         else:
             cmd = 'badread simulate'
             cmd += ' --reference '+ genome
-            cmd += ' --quantity ' + str(depth) + 'x'
-            cmd += ' gzip > ' + temp_dir + temp_prefix + '.fastq.gz'
+            cmd += ' --quantity ' + str(int(depth)) + 'x'
+            cmd += ' | gzip > ' + temp_dir + temp_prefix + '.fastq.gz'
 
         if not quiet:
             print("running cmd: " + cmd)
@@ -84,7 +84,7 @@ def generate_reads(genomes, depths, platform, prefix, outputdir, quiet=False):
             subprocess.run(cmd, shell=True, check=True)
     else:
         cmd = "zcat "
-        cmd += temp_dir + '/*'+ r + '.fastq.gz'
+        cmd += temp_dir + '/*' + '.fastq.gz'
         cmd += ' | gzip > ' + outputdir + prefix + '.fastq.gz'
         if not quiet:
             print("running cmd: " + cmd)
