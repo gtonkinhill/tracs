@@ -4,6 +4,7 @@ from .__init__ import __version__
 
 from .build_db import build_db_parser
 from .distance import distance_parser
+from .threshold import threshold_parser
 from .align import align_parser
 from .cluster import cluster_parser
 from .combine import combine_parser
@@ -28,6 +29,9 @@ def main():
 
     distance_subparser = subparsers.add_parser("distance")
     distance_subparser = distance_parser(distance_subparser)
+
+    threshold_subparser = subparsers.add_parser("threshold")
+    threshold_subparser = threshold_parser(threshold_subparser)
 
     cluster_subparser = subparsers.add_parser("cluster")
     cluster_subparser = cluster_parser(cluster_subparser)
