@@ -39,7 +39,9 @@ jobs:
           python -m pip list | grep pybind11
           
     - name: Install python dependencies
-      run: pip install scipy --prefer-binary
+      run: |
+          pip install scipy --prefer-binary
+          pip install importlib-metadata
   
     - name: Install Minimap2
       run: |
