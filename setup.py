@@ -51,13 +51,14 @@ if openmp and platform.system() == 'Darwin':
     extra_link_args.insert(-1, "-lomp")
 elif openmp:
     extra_compile_args.insert(-1, "-fopenmp")
-    extra_compile_args.insert(-1, "-I/data1/gerryt/software/miniconda3/envs/mtrans/include")
-    extra_compile_args.insert(-1, "-L/data1/gerryt/software/miniconda3/envs/mtrans/lib")
-    extra_link_args.insert(-1, "-fopenmp")
-    extra_link_args.insert(-1, "-L/data1/gerryt/software/miniconda3/envs/mtrans/lib")
+    extra_link_args.insert(-1, "-lomp")
+    # extra_compile_args.insert(-1, "-I/data1/gerryt/software/miniconda3/envs/mtrans/include")
+    # extra_compile_args.insert(-1, "-L/data1/gerryt/software/miniconda3/envs/mtrans/lib")
+    # extra_link_args.insert(-1, "-fopenmp")
+    # extra_link_args.insert(-1, "-L/data1/gerryt/software/miniconda3/envs/mtrans/lib")
 
-print(extra_compile_args)
-print(extra_link_args)
+# print(extra_compile_args)
+# print(extra_link_args)
 
 ext_modules = [
     Pybind11Extension("TRACM",
