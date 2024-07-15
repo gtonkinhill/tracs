@@ -44,7 +44,11 @@ def main():
 
     # parse arguments and run function
     args = parser.parse_args()
-    args.func(args)
+    try:
+        func = args.func
+    except AttributeError:
+        parser.error("Too few inputs. For help, run tracm --help")
+    func(args)
 
     return
 
