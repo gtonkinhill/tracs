@@ -16,13 +16,10 @@ on:
 jobs:
   build:
 
-    runs-on: ${{ matrix.config.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.9, '3.10']
-        config:
-          - {os: ubuntu-latest,   r: 'release'}
-          - {os: macos-latest,   r: 'release'}
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
