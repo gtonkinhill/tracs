@@ -4,5 +4,6 @@
 - [Distance](distance)
 - [Cluster](cluster)
 - [Database](database)
+- [Plots](plots)
 - [Pipe](pipe)
 
