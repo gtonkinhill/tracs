@@ -1,6 +1,6 @@
 # Pipe
 
-The pipe command can be used to run the full Trac'm pipeline on a set of samples. It is most useful when considering a small number of samples. It is usually better to run large datasets in stages, which makes it easier to run multiple `align` commands in parallel.
+The pipe command can be used to run the full TRACS pipeline on a set of samples. It is most useful when considering a small number of samples. It is usually better to run large datasets in stages, which makes it easier to run multiple `align` commands in parallel.
 
 The `pipe` command takes a text file as input with the sample name followed by the sequencing data in the subsequent columns. These can either be paired-end read files, a single combined read file, or an assembly. An example of the format is given below.
 
@@ -15,13 +15,13 @@ sampleC sampleC.fasta
 ### Example
 
 ```
-tracm pipe -i input_file_list.txt -o output_directory -t 15 --database gtdb-rs207.genomic-reps.dna.k51.sbt.zip --keep-all --filter --cluster_distance filter -c 10
+tracs pipe -i input_file_list.txt -o output_directory -t 15 --database gtdb-rs207.genomic-reps.dna.k51.sbt.zip --keep-all --filter --cluster_distance filter -c 10
 ```
 
 ### Options
 
 ```
-usage: tracm pipe [-h] -i INPUT_FILE --database DATABASE -o OUTPUT_DIR
+usage: tracs pipe [-h] -i INPUT_FILE --database DATABASE -o OUTPUT_DIR
                       [--meta METADATA] [--minimap_preset MINIMAP_PRESET]
                       [-Q MIN_BASE_QUAL] [-q MIN_MAP_QUAL] [-l MIN_QUERY_LEN]
                       [-V MAX_DIV] [--trim TRIM] [--min-cov MIN_COV]
@@ -33,7 +33,7 @@ usage: tracm pipe [-h] -i INPUT_FILE --database DATABASE -o OUTPUT_DIR
                       [--cluster_distance {SNP,direct,expectedK}] [-t N_CPU]
                       [--loglevel {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
 
-A script to run the full Tracm pipeline.
+A script to run the full TRACS pipeline.
 
 options:
   -h, --help            show this help message and exit

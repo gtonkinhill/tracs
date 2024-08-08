@@ -2,7 +2,7 @@
 
 The **distance** command rapidly calculates pairwise SNP and transmission distance estimates. It accepts a FASTA formatted multiple sequence alignment as input and is aware of IUPAC ambiguity codes. Transmission distance is estimated using a modified version of the [TransCluster](https://doi.org/10.1093/molbev/msy242) algorithm and will only be calculated if both the clock and transmission rate parameters are set.
 
-Trac'm includes a filtering strategy to account for problematic regions in alignments. These are usually the result of shared homology between species and strains within mixed samples or by hard-to-align regions of the genome. This can be enabled using the `--filter` option.
+TRACS includes a filtering strategy to account for problematic regions in alignments. These are usually the result of shared homology between species and strains within mixed samples or by hard-to-align regions of the genome. This can be enabled using the `--filter` option.
 
 It is recommended that a maximum SNP distance is set to speed up the algorithm and reduce the size of the output file. This is calculated before any filtering is done and thus it is recommended that it be an order of magnitude larger than the minimum SNP distance of interest.
 
@@ -13,7 +13,7 @@ It is recommended that a maximum SNP distance is set to speed up the algorithm a
 To run the **distance** command on an MSA file called "msa.fasta" with filtering and a minimum SNP distance of 1000 you can use the following command.
 
 ```
-tracm distance -i msa.fasta -o transmission_distances.csv --snp_threshold 1000 --filter
+tracs distance -i msa.fasta -o transmission_distances.csv --snp_threshold 1000 --filter
 ```
 
 ### Transmission distance (TransCluster)
@@ -21,7 +21,7 @@ tracm distance -i msa.fasta -o transmission_distances.csv --snp_threshold 1000 -
 Using estimates of the transmission and clock rate of SARS-CoV-2 (in transmissions/year and SNPs/genome/year respectively), the distance pipeline can be run as
 
 ```
-tracm distance -i msa.fasta --clock_rate 29.03 --trans_rate 73 --meta dates.csv
+tracs distance -i msa.fasta --clock_rate 29.03 --trans_rate 73 --meta dates.csv
 ```
 
 Here, we are assuming a transmission generation time of 5 days (5/356 = 73) and a clock rate of 1e-3 per base per year (1e-3 * 29903 = 29.03). The sample dates are proved as a csv formatted file with one sample per line for example
@@ -50,7 +50,7 @@ The **distance** command generates a csv with the following columns
 ## Options
 
 ```
-usage: tracm distance [-h] --msa MSA_FILES [MSA_FILES ...] [--msa-db MSA_DB]
+usage: tracs distance [-h] --msa MSA_FILES [MSA_FILES ...] [--msa-db MSA_DB]
                       [--meta METADATA] -o OUTPUT_FILE [-D SNP_THRESHOLD]
                       [--filter] [--clock_rate CLOCK_RATE]
                       [--trans_rate TRANS_RATE] [-K TRANS_THRESHOLD]

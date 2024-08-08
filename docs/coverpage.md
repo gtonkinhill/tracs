@@ -1,17 +1,17 @@
 <!-- _coverpage.md -->
 
-<img src="_figures/tracm_logo.png" width="370">
-<!-- ![logo](_figures/tracm_logo.jpeg) { width: 100px; } -->
+<img src="_figures/tracs_logo.png" width="370">
+<!-- ![logo](_figures/tracs_logo.jpeg) { width: 100px; } -->
 
 
-# Trac'm
+# TRACS
 
 > Pairwise transmission distances from single isolate,  
 multi-strain and metagenomic samples
 
 
 [Get Started](#main)
-[GitHub](https://github.com/gtonkinhill/tracm)
+[GitHub](https://github.com/gtonkinhill/tracs)
 
 
 <!-- background color -->

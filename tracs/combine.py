@@ -13,7 +13,7 @@ from joblib import Parallel, delayed
 
 
 def combine_parser(parser):
-    parser.description = "Combine runs of Tracm'm align ready for distance estimation"
+    parser.description = "Combine runs of TRACS'm align ready for distance estimation"
 
     io_opts = parser.add_argument_group("Input/output")
 
@@ -22,7 +22,7 @@ def combine_parser(parser):
         "--input",
         dest="directories",
         required=True,
-        help="Paths to each directory containing the output of the Trac'm align function",
+        help="Paths to each directory containing the output of the TRACS align function",
         type=os.path.abspath,
         nargs="+",
     )
@@ -67,7 +67,7 @@ def find_ref(filename):
         ref = result.group(1)
     else:
         logging.error(
-            "ERROR: {} is not the expected output of Trac'm align".format(filename)
+            "ERROR: {} is not the expected output of TRACS align".format(filename)
         )
         sys.exit(1)
 

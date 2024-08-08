@@ -1,4 +1,4 @@
-- [Trac'm](README)
+- [TRACS](README)
 - [Installation](installation)
 - [Alignment](alignment)
 - [Distance](distance)

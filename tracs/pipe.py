@@ -18,7 +18,7 @@ os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 def pipe_parser(parser):
 
-    parser.description = "A script to run the full Tracm pipeline."
+    parser.description = "A script to run the full TRACS pipeline."
 
     io_opts = parser.add_argument_group("Input/output")
 

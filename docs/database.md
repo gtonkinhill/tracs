@@ -2,9 +2,9 @@
 
 ## Prebuilt GTDB database
 
-Trac'm can accept prebuilt databases provided on the GTDB and Sourmash websites. If only the Sourmash database is supplied, Trac'm automatically downloads the reference genomes corresponding to the species observed within the given sample from RefSeq. This eliminates the inconvenience associated with downloading the comprehensive reference genome database from GTDB which can be very large. However, when analysing multiple samples, it can be more advantageous to preemptively download the complete set of genomes from GTDB.
+TRACS can accept prebuilt databases provided on the GTDB and Sourmash websites. If only the Sourmash database is supplied, TRACS automatically downloads the reference genomes corresponding to the species observed within the given sample from RefSeq. This eliminates the inconvenience associated with downloading the comprehensive reference genome database from GTDB which can be very large. However, when analysing multiple samples, it can be more advantageous to preemptively download the complete set of genomes from GTDB.
 
-The Sourmash file can be provided to Trac'm as is. When using the GTDB references it is necessary to untar the file first by running `tar -xf`
+The Sourmash file can be provided to TRACS as is. When using the GTDB references it is necessary to untar the file first by running `tar -xf`
 
 
 | Database 	| Sourmash DB 	| GTDB reference genomes 	|
@@ -32,13 +32,13 @@ tar -xf gtdb_genomes_reps_r214.tar.gz
 The [align](align.md) command using just the Sourmash RS214 database can be run as
 
 ```
-tracm align -i example_sample_R1.fastq example_sample_R1.fastq -o output_folder --database gtdb-rs214-reps.k51.sbt.zip
+tracs align -i example_sample_R1.fastq example_sample_R1.fastq -o output_folder --database gtdb-rs214-reps.k51.sbt.zip
 ```
 
 To avoid repeatedly downloading the same reference genomes, the path to the untar'd GTDB database can be provided as 
 
 ```
-tracm align -i example_sample_R1.fastq example_sample_R1.fastq -o output_folder --database gtdb-rs214-reps.k51.sbt.zip --refseqs gtdb_genomes_reps_r214/database
+tracs align -i example_sample_R1.fastq example_sample_R1.fastq -o output_folder --database gtdb-rs214-reps.k51.sbt.zip --refseqs gtdb_genomes_reps_r214/database
 ```
 
 
@@ -49,19 +49,19 @@ To investigate multiple strains within a species or if only a subset of species 
 ### Example
 
 ```
-tracm build-db -i refA.fasta refB.fasta refC.fast -o custom_db.zip -t 10
+tracs build-db -i refA.fasta refB.fasta refC.fast -o custom_db.zip -t 10
 ```
 
 Alternatively, you can pass many fasta files located in the same directory as
 
 ```
-tracm build-db -i /path/to/references/*.fasta -o custom_db.zip -t 10
+tracs build-db -i /path/to/references/*.fasta -o custom_db.zip -t 10
 ```
 
 ### Options
 
 ```
-Builds a database for tracm
+Builds a database for tracs
 
 options:
   -h, --help            show this help message and exit

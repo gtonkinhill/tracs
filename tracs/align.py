@@ -18,7 +18,7 @@ from .utils import run_gather, generate_reads
 from .pileup import align_and_pileup, align_and_pileup_composite
 from .dirichlet_multinomial import find_dirichlet_priors
 
-from TRACM import calculate_posteriors
+from TRACS import calculate_posteriors
 
 from collections import Counter
 
@@ -358,7 +358,7 @@ def align(args):
         ref_locs = {}
         if ".sbt.zip" in args.database:
             logging.warning(
-                "No references provided. Tracm will attempt to download references from Genbank"
+                "No references provided. TRACS will attempt to download references from Genbank"
             )
 
             if args.refseqs is None:

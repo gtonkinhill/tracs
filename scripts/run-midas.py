@@ -44,7 +44,7 @@ def main():
         dest="refDB",
         help="path to midas2 database",
         # required=True,
-        default="/data1/gerryt/tracm-data/simulations/my_midasdb_gtdb",
+        default="/data1/gerryt/tracs-data/simulations/my_midasdb_gtdb",
         type=os.path.abspath
     )
 

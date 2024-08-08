@@ -1,20 +1,20 @@
-# Trac'm
+# TRACS
 
-[![tracm-CI](https://github.com/gtonkinhill/tracm/actions/workflows/tracm_test.yml/badge.svg)](https://github.com/gtonkinhill/tracm/actions/workflows/tracm_test.yml)
+[![tracs-CI](https://github.com/gtonkinhill/tracs/actions/workflows/tracs_test.yml/badge.svg)](https://github.com/gtonkinhill/tracs/actions/workflows/tracs_test.yml)
 
 <p align="center">
-<img src="https://github.com/gtonkinhill/tracm/blob/main/docs/_figures/tracm_logo.png" alt="alt text" width="500">
+<img src="https://github.com/gtonkinhill/tracs/blob/main/docs/_figures/tracs_logo.png" alt="alt text" width="500">
 </p>
 
-Trac'm provides robust estimates of pairwise transmission distances from single isolate, multi-strain and metagenomic samples. It uses an empirical Bayes approach to account for variable sequence coverage and aligns to multiple reference genomes to estimate a **lower bound** for both the SNP distance and the number of intermediate hosts seperating two samples.
+TRACS provides robust estimates of pairwise transmission distances from single isolate, multi-strain and metagenomic samples. It uses an empirical Bayes approach to account for variable sequence coverage and aligns to multiple reference genomes to estimate a **lower bound** for both the SNP distance and the number of intermediate hosts seperating two samples.
 
-**Note: Trac'm is not intended to estimate very large SNP distances**
+**Note: TRACS is not intended to estimate very large SNP distances**
 
 ## Documentation
 
-Trac'm is currently under development and frequent backwards incompatable changes may be made.
+TRACS is currently under development and frequent backwards incompatable changes may be made.
 
-Documentation for Trac'm can be found [here](https://gtonkinhill.github.io/tracm)
+Documentation for TRACS can be found [here](https://gtonkinhill.github.io/tracs)
 
 ## Installation
 
@@ -22,21 +22,21 @@ Documentation for Trac'm can be found [here](https://gtonkinhill.github.io/tracm
 
 A proper Conda install is coming soon.
 
-In the mean time, Trac'm can be installed using conda by running
+In the mean time, TRACS can be installed using conda by running
 
 ```
-conda create -n tracm python=3.10
-conda activate tracm
+conda create -n tracs python=3.10
+conda activate tracs
 conda install -c bioconda samtools htsbox minimap2
-pip3 install git+https://github.com/gtonkinhill/tracm
+pip3 install git+https://github.com/gtonkinhill/tracs
 ```
 
 ### Manual
 
-Tracm is a python package and can be installed easily using pip. 
+TRACS is a python package and can be installed easily using pip. 
 
 ```
-pip3 install git+https://github.com/gtonkinhill/tracm
+pip3 install git+https://github.com/gtonkinhill/tracs
 ```
 
 This is all that is needed for the pairwise distance and clustering commands. To generate alignments you will also need to install [samtools](http://www.htslib.org/), [minimap2](https://github.com/lh3/minimap2) and [htsbox](https://github.com/lh3/htsbox).

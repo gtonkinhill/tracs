@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Wrapper for running the 'combine' function directly from source tree."""
 
-from tracm.combine import main
+from tracs.combine import main
 
 if __name__ == '__main__':
     main()

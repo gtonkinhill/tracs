@@ -23,37 +23,37 @@ The major options that should be considered are
 To align to a single reference genome the `--refseqs` option can be set as
 
 ```
-tracm align -i read_file_1.fq read_file_2.fq --refseqs reference_genome.fasta -o output_folder -p sample_name
+tracs align -i read_file_1.fq read_file_2.fq --refseqs reference_genome.fasta -o output_folder -p sample_name
 ```
 
 #### Metagenomic data with GTDB database
 
-To analyse a metagenomic dataset using the GTDB database as a reference you can either have Trac'm automatically downloads the required genomes using the precompiled Sourmash databases available [here](https://sourmash.readthedocs.io/en/latest/databases.html)](https://sourmash.readthedocs.io/en/latest/databases.html)
+To analyse a metagenomic dataset using the GTDB database as a reference you can either have TRACS automatically downloads the required genomes using the precompiled Sourmash databases available [here](https://sourmash.readthedocs.io/en/latest/databases.html)](https://sourmash.readthedocs.io/en/latest/databases.html)
 
-Trac'm expects the SBT format files ending in `.sbt.zip`
-
-```
-tracm align -i read_file_1.fq read_file_2.fq --database gtdb-rs207.genomic-reps.dna.k51.sbt.zip -o output_folder -p sample_name
-```
-
-Alternatively, you can also specify the location of the pre-downloaded GTDB fasta files. This avoids redownloading them which is particularly useful when analysing large numbers of samples on a compute cluster. These folders can be downloaded from [here](https://data.gtdb.ecogenomic.org/). You will need the folder containing all representative genomes, usually labelled something like `gtdb_genomes_reps_r207.tar.gz`. This then needs to be unzipped prior to running Trac'm. It is the user's responsibility to ensure the correct pairing of Sourmash and GTDB reference folders are used.
+TRACS expects the SBT format files ending in `.sbt.zip`
 
 ```
-tracm align -i read_file_1.fq read_file_2.fq --database gtdb-rs207.genomic-reps.dna.k51.sbt.zip --refseqs gtdb_genomes_reps_r207 -o output_folder -p sample_name
+tracs align -i read_file_1.fq read_file_2.fq --database gtdb-rs207.genomic-reps.dna.k51.sbt.zip -o output_folder -p sample_name
+```
+
+Alternatively, you can also specify the location of the pre-downloaded GTDB fasta files. This avoids redownloading them which is particularly useful when analysing large numbers of samples on a compute cluster. These folders can be downloaded from [here](https://data.gtdb.ecogenomic.org/). You will need the folder containing all representative genomes, usually labelled something like `gtdb_genomes_reps_r207.tar.gz`. This then needs to be unzipped prior to running TRACS. It is the user's responsibility to ensure the correct pairing of Sourmash and GTDB reference folders are used.
+
+```
+tracs align -i read_file_1.fq read_file_2.fq --database gtdb-rs207.genomic-reps.dna.k51.sbt.zip --refseqs gtdb_genomes_reps_r207 -o output_folder -p sample_name
 ```
 
 #### Species level and custom databases
 
-Finally, it possible to run Trac'm using a custom database generated using the [build-db](database.md) command. Pre-compiled version of the for *S. pneumoniae* is available [here]().
+Finally, it possible to run TRACS using a custom database generated using the [build-db](database.md) command. Pre-compiled version of the for *S. pneumoniae* is available [here]().
 
 ```
-tracm align -i read_file_1.fq read_file_2.fq --database reference_db.zip -o output_folder -p sample_name
+tracs align -i read_file_1.fq read_file_2.fq --database reference_db.zip -o output_folder -p sample_name
 ```
 
 ### Options
 
 ```
-usage: tracm align [-h] -i INPUT_FILES [INPUT_FILES ...] [--database DATABASE]
+usage: tracs align [-h] -i INPUT_FILES [INPUT_FILES ...] [--database DATABASE]
                    [--refseqs REFSEQS] -o OUTPUT_DIR [-p PREFIX]
                    [--minimap_preset MINIMAP_PRESET] [-Q MIN_BASE_QUAL]
                    [-q MIN_MAP_QUAL] [-l MIN_QUERY_LEN] [-V MAX_DIV]

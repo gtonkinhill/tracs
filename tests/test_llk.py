@@ -1,6 +1,6 @@
 # test llk gives the same answer as found using Sage math cloud.
-# from TRACM import lprob_transmission
-from TRACM import lprob_k_given_N
+# from TRACS import lprob_transmission
+from TRACS import lprob_k_given_N
 from scipy.special import gammaln
 
 def test_lprob_k_given_N():

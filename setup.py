@@ -55,28 +55,28 @@ elif openmp:
 
 
 ext_modules = [
-    Pybind11Extension("TRACM",
+    Pybind11Extension("TRACS",
         ["src/python_bindings.cpp"],
         # Example: passing in the version to the compiled code
-        define_macros = [('VERSION_INFO', find_version("tracm/__init__.py"))],
+        define_macros = [('VERSION_INFO', find_version("tracs/__init__.py"))],
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args),
 ]
 
 
 setup(
-    name="tracm",
-    version=find_version("tracm/__init__.py"),
+    name="tracs",
+    version=find_version("tracs/__init__.py"),
     author="Gerry Tonkin-Hill",
     description=
     "A fast python and and c++ pipeline for identifying transmission clusters from single genome and metagenomic data",
     long_description_content_type="text/markdown",
-    url="https://github.com/gtonkinhill/tracm",
+    url="https://github.com/gtonkinhill/tracs",
     install_requires=[
         'numpy', 'scipy', 'plotly', 'matplotlib', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'ncbi_genome_download'
     ],
     python_requires='>=3.9.0',
-    packages=['tracm'],
+    packages=['tracs'],
     keywords='transmission clustering metagenomics',
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -88,7 +88,7 @@ setup(
     ],
     entry_points={
         'console_scripts':
-        ['tracm = tracm.__main__:main',],
+        ['tracs = tracs.__main__:main',],
     },
     ext_modules=ext_modules,
     extras_require={"test": "pytest"},

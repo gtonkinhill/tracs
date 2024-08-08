@@ -47,7 +47,7 @@ def main():
     try:
         func = args.func
     except AttributeError:
-        parser.error("Too few inputs. For help, run tracm --help")
+        parser.error("Too few inputs. For help, run tracs --help")
     func(args)
 
     return

@@ -41,7 +41,7 @@ def main():
         dest="refDB",
         help="path to Metaphlan database",
         # required=True,
-        default="/data1/gerryt/tracm-data/simulations/metaphlan/metaphlanDB",
+        default="/data1/gerryt/tracs-data/simulations/metaphlan/metaphlanDB",
         type=os.path.abspath
     )
 

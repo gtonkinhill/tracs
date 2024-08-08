@@ -1,5 +1,5 @@
 # test llk gives the same answer as found using Sage math cloud.
-from tracm.dirichlet_multinomial import find_dirichlet_priors
+from tracs.dirichlet_multinomial import find_dirichlet_priors
 import numpy as np
 
 def test_dirichlet_multinomial():

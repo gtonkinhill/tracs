@@ -1,4 +1,4 @@
-from tracm.pipe import main
+from tracs.pipe import main
 
 import tempfile
 import os, sys

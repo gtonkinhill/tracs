@@ -1,4 +1,4 @@
-from tracm.distance import main
+from tracs.distance import main
 
 import tempfile
 import os, sys

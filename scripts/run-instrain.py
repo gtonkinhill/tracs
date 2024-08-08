@@ -205,7 +205,7 @@ def main():
         references[os.path.splitext(os.path.basename(ref))[0]] = ref
 
 
-    # this uses the same commands as in tracm but with a composite reference
+    # this uses the same commands as in tracs but with a composite reference
 
     # sampleA 
     bamA = align_and_pileup_composite(

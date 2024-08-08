@@ -5,7 +5,7 @@ The **cluster** module takes pairwise distance estimates in the format produced 
 ### Example
 
 ```
-tracm cluster -d transmission_distances.csv -o clusters.csv -D filter -c 10
+tracs cluster -d transmission_distances.csv -o clusters.csv -D filter -c 10
 ```
 
 ### Output
