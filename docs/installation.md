@@ -2,15 +2,10 @@
 
 ## Conda
 
-A proper Conda install is coming soon.
-
-In the meantime, TRACS can be installed using conda by running
+TRACS can be installed using conda by running
 
 ```
-conda create -n tracs python=3.10
-conda activate tracs
-conda install -c bioconda samtools htsbox minimap2
-pip3 install git+https://github.com/gtonkinhill/tracs
+conda install bioconda::tracs
 ```
 
 ## Manual
