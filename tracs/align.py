@@ -377,6 +377,7 @@ def align(args):
                         os.mkdir(temprefdir)
                         ref_locs[ref] = download_ref(ref, temprefdir)
                     else:
+                        logging.info(f"Reference already downloaded: {ref}")
                         ref_locs[ref] = glob.glob(temprefdir + "*.fna.gz")[0]
                 else:
                     ref_locs[ref] = find_fasta(args.refseqs, ref)
