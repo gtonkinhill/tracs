@@ -9,6 +9,7 @@ from .align import align_parser
 from .cluster import cluster_parser
 from .combine import combine_parser
 from .pipe import pipe_parser
+from .plots import plots_parser
 
 
 def main():
@@ -41,6 +42,9 @@ def main():
 
     pipe_subparser = subparsers.add_parser("pipe")
     pipe_subparser = pipe_parser(pipe_subparser)
+
+    plot_subparser = subparsers.add_parser("plot")
+    plot_subparser = plots_parser(plot_subparser)
 
     # parse arguments and run function
     args = parser.parse_args()
