@@ -20,7 +20,12 @@ When dealing with a small number of samples, the [pipe](pipe.md) command can be 
 
 ## Examples
 
-All files needed to run these examples are provided [here](https://zenodo.org/record/8202050).
+All files needed to run these examples are provided [here](https://zenodo.org/record/8202050). Alternatively, they can be downloaded and unzipped using:
+```bash
+wget https://zenodo.org/records/8202050/files/isolate.zip && unzip isolate.zip
+wget https://zenodo.org/records/8202050/files/metagenomic.zip && unzip metagenomic.zip
+wget https://zenodo.org/records/8202050/files/multistrain.zip && unzip multistrain.zip
+```
 
 ### Isolate
 
@@ -44,6 +49,8 @@ Here, we assume a transmission generation time of 5 days (5/356 = 73) and a cloc
 tracs distance --msa MA_combined_consensus_replicates_filt_dates.fa  --meta combined_consensus_replicates_filt_dates.csv -o transmission_distances.csv --trans_rate 73 --clock_rate 29.03
 ```
 
+> **Note:** For SARS-CoV-2, gene duplication and horizontal gene transfer (HGT) are not expected to be major issues, and the `--filter` option was therefore not used. As a result, TRACS will output `NaN` for `filtered_SNP_distance`.
+
 #### Cluster
 
 To cluster the inferred distances we can run the [cluster](cluster.md) command.
@@ -60,11 +67,11 @@ For the metagenomics example, we consider a pair of simulated human gut microbio
 
 #### Align
 
-We first need to align the sequencing reads to reference genomes. The set of references can either be a custom database generated using the [build-db](database.md) command or a GTDB/sourmash database. 
+We first need to align the sequencing reads to reference genomes. The set of references can either be a custom database generated using the [build-db](database.md#creating-a-database) command or a [GTDB/sourmash database](database.md#prebuilt-gtdb-database). 
 
 If only the Sourmash database is supplied, TRACS automatically downloads the reference genomes corresponding to the species observed within the given sample. This eliminates the inconvenience associated with downloading the comprehensive reference genome database from GTDB. However, when analysing many samples, it can be more advantageous to preemptively download the complete set of genomes from GTDB. 
 
-Run the [align](alignment.md) command separately on each sample 
+Run the [align](alignment.md) command separately on each sample
 
 ```
 tracs align -i sim_d5_ref_GCF_018292165.1_ASM1829216v1_genomic_A*.fastq.gz -o sampleA --prefix sampleA --keep-all -t 20 --database gtdb-rs214-reps.k51.sbt.zip
