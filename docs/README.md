@@ -64,7 +64,7 @@ We first need to align the sequencing reads to reference genomes. The set of ref
 
 If only the Sourmash database is supplied, TRACS automatically downloads the reference genomes corresponding to the species observed within the given sample. This eliminates the inconvenience associated with downloading the comprehensive reference genome database from GTDB. However, when analysing many samples, it can be more advantageous to preemptively download the complete set of genomes from GTDB. 
 
-Run the [align](alignment.md) command separately on each sample
+Run the [align](alignment.md) command separately on each sample 
 
 ```
 tracs align -i sim_d5_ref_GCF_018292165.1_ASM1829216v1_genomic_A*.fastq.gz -o sampleA --prefix sampleA --keep-all -t 20 --database gtdb-rs214-reps.k51.sbt.zip
