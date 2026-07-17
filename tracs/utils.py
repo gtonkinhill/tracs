@@ -55,6 +55,15 @@ def run_gather(
     logging.info(f"command: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
 
+    # sourmash does not write an output file if it finds no matches
+    if not os.path.isfile(output + ".csv"):
+        logging.error(
+            f"No reference genomes were found within {threshold_bp}bp of the query. "
+            "Consider lowering --threshold-bp, using a larger database or providing a reference with --refseqs. "
+            "See the sourmash log for more details."
+        )
+        sys.exit(1)
+
     # Process results
     references = []
     potential = []
