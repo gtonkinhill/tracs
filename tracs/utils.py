@@ -59,7 +59,7 @@ def run_gather(
     if not os.path.isfile(output + ".csv"):
         logging.error(
             f"No reference genomes were found within {threshold_bp}bp of the query. "
-            "Consider lowering --threshold-bp, using a larger database or providing a reference with --refseqs. "
+            "Consider using a larger database or providing a reference with --refseqs. "
             "See the sourmash log for more details."
         )
         sys.exit(1)
