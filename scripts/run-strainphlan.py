@@ -98,17 +98,18 @@ def main():
 
     # align with metaphlan
     for n, dirT in [('A', dirA), ('B', dirB)]:
-        if os.path.exists(dirT + n + "_metagenome.bowtie2.bz2"):
-            cmd = "metaphlan --input_type bowtie2out"
-            cmd += " " + dirT + n + "_metagenome.bowtie2.bz2"
+        # if os.path.exists(dirT + n + "_metagenome.bowtie2.bz2"):
+        #     cmd = "metaphlan --input_type bowtie2out"
+        #     cmd += " " + dirT + n + "_metagenome.bowtie2.bz2"
+        # else:
+        # metaphlan metagenome.fastq --bowtie2out metagenome.bowtie2.bz2 --nproc 5 --input_type fastq -o profiled_metagenome.txt
+        cmd = "metaphlan --input_type fastq"
+        if n=='A':
+            cmd += " " + ','.join(args.input_files_A)
         else:
-            # metaphlan metagenome.fastq --bowtie2out metagenome.bowtie2.bz2 --nproc 5 --input_type fastq -o profiled_metagenome.txt
-            cmd = "metaphlan --input_type fastq"
-            if n=='A':
-                cmd += " " + ','.join(args.input_files_A)
-            else:
-                cmd += " " + ','.join(args.input_files_B)
-            cmd += " --bowtie2out " + dirT + n + "_metagenome.bowtie2.bz2"
+            cmd += " " + ','.join(args.input_files_B)
+        cmd += " --bowtie2out " + dirT + n + "_metagenome.bowtie2.bz2"
+        
         cmd += " --bowtie2db " + args.refDB
         cmd += " -s " + dirT + n + "_metagenome.sam.bz2"
         cmd += " -o " + dirT + "profiled_metagenome.txt"

@@ -73,7 +73,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/gtonkinhill/tracs",
     install_requires=[
-        'numpy', 'scipy', 'plotly', 'matplotlib', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'ncbi_genome_download'
+        'numpy', 'scipy', 'plotly', 'matplotlib', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'ncbi_genome_download', 'pysylph'
     ],
     python_requires='>=3.9.0',
     packages=['tracs'],

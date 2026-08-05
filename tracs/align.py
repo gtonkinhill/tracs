@@ -14,7 +14,7 @@ import ncbi_genome_download as ngd
 import glob
 import pathlib
 
-from .utils import run_gather, generate_reads
+from .utils import run_gather, generate_reads, run_sylph_profile
 from .pileup import align_and_pileup, align_and_pileup_composite
 from .dirichlet_multinomial import find_dirichlet_priors
 
@@ -55,6 +55,15 @@ def align_parser(parser):
         help="path to reference fasta files",
         type=os.path.abspath,
         default=None,
+    )
+
+    io_opts.add_argument(
+        "--screen_method",
+        dest="screen_method",
+        help="method to use for screening reference genomes",
+        choices=["sourmash", "sylph"],
+        type=str,
+        default="sourmash",
     )
 
     io_opts.add_argument(
@@ -339,21 +348,44 @@ def align(args):
         args.prefix = os.path.splitext(os.path.basename(args.input_files[0]))[0]
 
     if not single_ref:
-        # retrieve sourmash database from zipfile
-        if ".sbt.zip" in args.database:
-            smdb = args.database
-        else:
-            with ZipFile(args.database, "r") as archive:
-                archive.extract("sourmashDB.sbt.zip", temp_dir)
-                smdb = temp_dir + "sourmashDB.sbt.zip"
+        # retrieve sourmash or sylph database from zipfile
+        if args.screen_method == "sourmash":
+            if ".sbt.zip" in args.database:
+                smdb = args.database
+            else:
+                with ZipFile(args.database, "r") as archive:
+                    archive.extract("sourmashDB.sbt.zip", temp_dir)
+                    smdb = temp_dir + "sourmashDB.sbt.zip"
 
-        # run soursmash 'gather' method
-        references = run_gather(
-            input_files=args.input_files,
-            databasefile=smdb,
-            output=args.output_dir + args.prefix + "_sourmash_hits",
-            temp_dir=temp_dir,
-        )
+            # run soursmash 'gather' method
+            references = run_gather(
+                input_files=args.input_files,
+                databasefile=smdb,
+                output=args.output_dir + args.prefix + "_sourmash_hits",
+                temp_dir=temp_dir,
+            )
+
+        elif args.screen_method == "sylph":
+            if ".syldb" in args.database:
+                smdb = args.database
+            else:
+                with ZipFile(args.database, "r") as archive:
+                    archive.extract("sylphDB.syldb", temp_dir)
+                    smdb = temp_dir + "sylphDB.syldb"
+
+            # run sylph profile method
+            references = run_sylph_profile(
+                input_files=args.input_files,
+                databasefile=smdb,
+                output=args.output_dir + args.prefix + "_sylph_hits",
+                min_eff_cov=0.1,   # Used as sequence abundance threshold
+                min_ani=0.95       # Added: Sylph excels at ANI-based filtering
+            )
+        else:
+            logging.error("Screening method must be either 'sourmash' or 'sylph'!")
+            sys.exit(1)
+
+        
 
         ref_locs = {}
         if ".sbt.zip" in args.database:
