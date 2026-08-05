@@ -341,8 +341,10 @@ def align(args):
     if not single_ref:
         # retrieve sourmash database from zipfile
         if is_valid_sourmash_db(args.database):
+            print("HERE!!!")
             smdb = args.database
         else:
+            print("HERE222")
             with ZipFile(args.database, "r") as archive:
                 archive.extract("sourmashDB.sbt.zip", temp_dir)
                 smdb = temp_dir + "sourmashDB.sbt.zip"

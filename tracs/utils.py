@@ -11,13 +11,18 @@ from sourmash.exceptions import SourmashError
 
 def is_valid_sourmash_db(filepath):
     try:
-        # load_file_as_index is format-agnostic and works for:
-        # .sig, .sig.gz, .sbt.zip, .lca.json, .sqldb, etc.
-        db = sourmash.load_file_as_index(filepath)        
-        # If it returns an object without crashing, it is valid
+        db = sourmash.load_file_as_index(filepath)
+        manifest = db.manifest
+        if manifest is None:
+            return False
+        n = len(db)  # forces manifest/signature enumeration
+        if n == 0:
+            return False
         return True
-    except (ValueError, SourmashError, FileNotFoundError) as e:
-        # Catch sourmash-specific errors and standard file errors
+    except Exception:
+        # Catch broadly: zipfile.BadZipFile, json.JSONDecodeError,
+        # KeyError, ValueError, SourmashError, FileNotFoundError, etc.
+        # can all surface once parsing is forced.
         return False
 
 def run_sketch(input_files, prefix, output, ksize=51, scaled=10000):
