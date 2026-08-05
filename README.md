@@ -6,13 +6,13 @@
 <img src="https://github.com/gtonkinhill/tracs/blob/main/docs/_figures/tracs_logo.png" alt="alt text" width="500">
 </p>
 
-TRACS provides robust estimates of pairwise transmission distances from single isolate, multi-strain and metagenomic samples. It uses an empirical Bayes approach to account for variable sequence coverage and aligns to multiple reference genomes to estimate a **lower bound** for both the SNP distance and the number of intermediate hosts seperating two samples.
+TRACS provides robust estimates of pairwise transmission distances from single isolate, multi-strain and metagenomic samples. It uses an empirical Bayes approach to account for variable sequence coverage and aligns to multiple reference genomes to estimate a **lower bound** for both the SNP distance and the number of intermediate hosts separating two samples.
 
 **Note: TRACS is not intended to estimate very large SNP distances**
 
 ## Documentation
 
-TRACS is currently under development and frequent backwards incompatable changes may be made.
+TRACS is currently under development and frequent backwards incompatible changes may be made.
 
 Documentation for TRACS can be found [here](https://gtonkinhill.github.io/tracs)
 

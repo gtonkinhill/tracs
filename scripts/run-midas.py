@@ -162,7 +162,7 @@ def main():
             line = line.strip().split()
             cov[(line[0], line[1])] = line[-2:]
 
-    # count snps and write sumamry report
+    # count snps and write summary report
     with open(args.output_dir + "summary_snp_dist.tsv", 'w') as outfile:
         outfile.write("speciesID\tsnp_dist\tspecies_name\tfcovA\tmcovA\tfcovB\tmcovB\n")
         snp_files = glob.glob(args.output_dir + "merge/snps/*/*snps_info.tsv.lz4")

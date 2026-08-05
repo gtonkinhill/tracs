@@ -97,7 +97,7 @@ def generate_reads(genomes, depths, platform, prefix, outputdir, quiet=False):
 
 def main():
 
-    parser = argparse.ArgumentParser(description = "Simulates pairs of metagenomic samples with a specified snp distance seperating a given strain")
+    parser = argparse.ArgumentParser(description = "Simulates pairs of metagenomic samples with a specified snp distance separating a given strain")
 
     io_opts = parser.add_argument_group("Input/output")
 

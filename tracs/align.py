@@ -282,45 +282,64 @@ def align(args):
             references = [os.path.splitext(os.path.basename(args.refseqs))[0]]
             ref_locs = {references[0]: args.refseqs}
 
-    b = np.array(
-        [
-            [0, 0, 0, 0],  # X
-            [1, 0, 0, 0],  # A
-            [0, 1, 0, 0],  # C
-            [0, 0, 1, 0],  # G
-            [0, 0, 0, 1],  # T
-            [1, 1, 0, 0],  # AC
-            [1, 0, 1, 0],  # AG
-            [1, 0, 0, 1],  # AT
-            [0, 1, 1, 0],  # CG
-            [0, 1, 0, 1],  # CT
-            [0, 0, 1, 1],  # GT
-            [0, 1, 1, 1],  # CGT
-            [1, 0, 1, 1],  # AGT
-            [1, 1, 0, 1],  # ACT
-            [1, 1, 1, 0],  # ACG
-            [1, 1, 1, 1],  # ACGT
-        ]
-    )
-    iupac_codes = np.empty(b.shape[0], dtype='S1')
-    iupac_codes[np.packbits(b, axis=1, bitorder="little").flatten()] = [
-        b"X",
-        b"A",
-        b"C",
-        b"G",
-        b"T",
-        b"M",
-        b"R",
-        b"W",
-        b"S",
-        b"Y",
-        b"K",
-        b"B",
-        b"D",
-        b"H",
-        b"V",
-        b"N",
-    ]
+    # b = np.array(
+    #     [
+    #         [0, 0, 0, 0],  # X
+    #         [1, 0, 0, 0],  # A
+    #         [0, 1, 0, 0],  # C
+    #         [0, 0, 1, 0],  # G
+    #         [0, 0, 0, 1],  # T
+    #         [1, 1, 0, 0],  # AC
+    #         [1, 0, 1, 0],  # AG
+    #         [1, 0, 0, 1],  # AT
+    #         [0, 1, 1, 0],  # CG
+    #         [0, 1, 0, 1],  # CT
+    #         [0, 0, 1, 1],  # GT
+    #         [0, 1, 1, 1],  # CGT
+    #         [1, 0, 1, 1],  # AGT
+    #         [1, 1, 0, 1],  # ACT
+    #         [1, 1, 1, 0],  # ACG
+    #         [1, 1, 1, 1],  # ACGT
+    #     ]
+    # )
+    # iupac_codes = np.empty(b.shape[0], dtype='S1')
+    # iupac_codes[np.packbits(b, axis=1, bitorder="little").flatten()] = [
+    #     b"X",
+    #     b"A",
+    #     b"C",
+    #     b"G",
+    #     b"T",
+    #     b"M",
+    #     b"R",
+    #     b"W",
+    #     b"S",
+    #     b"Y",
+    #     b"K",
+    #     b"B",
+    #     b"D",
+    #     b"H",
+    #     b"V",
+    #     b"N",
+    # ]
+
+    iupac_codes = np.array([
+        b"X",  # 0000 -> 0
+        b"A",  # 1000 -> 1
+        b"C",  # 0100 -> 2
+        b"M",  # 1100 -> 3 (A, C)
+        b"G",  # 0010 -> 4
+        b"R",  # 1010 -> 5 (A, G)
+        b"S",  # 0110 -> 6 (C, G)
+        b"V",  # 1110 -> 7 (A, C, G)
+        b"T",  # 0001 -> 8 
+        b"W",  # 1001 -> 9 (A, T)
+        b"Y",  # 0101 -> 10 (C, T)
+        b"H",  # 1101 -> 11 (A, C, T)
+        b"K",  # 0011 -> 12 (G, T)
+        b"D",  # 1011 -> 13 (A, G, T)
+        b"B",  # 0111 -> 14 (C, G, T)
+        b"N",  # 1111 -> 15 (A, C, G, T)
+    ], dtype='S1')
 
     # get working directory and create temp directory
     # create directory if it isn't present already
@@ -341,10 +360,8 @@ def align(args):
     if not single_ref:
         # retrieve sourmash database from zipfile
         if is_valid_sourmash_db(args.database):
-            print("HERE!!!")
             smdb = args.database
         else:
-            print("HERE222")
             with ZipFile(args.database, "r") as archive:
                 archive.extract("sourmashDB.sbt.zip", temp_dir)
                 smdb = temp_dir + "sourmashDB.sbt.zip"

@@ -241,7 +241,7 @@ inline std::tuple<std::vector<double>, std::vector<double>>
 trans_dist(const std::vector<int> &snpdiff, const std::vector<double> &datediff, double lamb, double beta, double threshold_Ek=1e-6)
 {
 
-    // chache results
+    // cache results
     std::unordered_map<std::tuple<int, double>, double> eK_map;
     std::unordered_map<std::tuple<int, int, double>, std::tuple<double, double>> kN_map;
 
