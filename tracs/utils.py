@@ -6,7 +6,19 @@ import subprocess
 import random
 import gzip
 import pyfastx as fx
+import sourmash
+from sourmash.exceptions import SourmashError
 
+def is_valid_sourmash_db(filepath):
+    try:
+        # load_file_as_index is format-agnostic and works for:
+        # .sig, .sig.gz, .sbt.zip, .lca.json, .sqldb, etc.
+        db = sourmash.load_file_as_index(filepath)        
+        # If it returns an object without crashing, it is valid
+        return True
+    except (ValueError, SourmashError, FileNotFoundError) as e:
+        # Catch sourmash-specific errors and standard file errors
+        return False
 
 def run_sketch(input_files, prefix, output, ksize=51, scaled=10000):
     cmd = "sourmash sketch dna"
