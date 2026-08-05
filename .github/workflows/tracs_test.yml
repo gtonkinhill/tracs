@@ -1,6 +1,7 @@
 name: tracs-CI
 
 on:
+  workflow_dispatch: # This single line enables the manual trigger button
   push:
     branches:
     - main
@@ -75,5 +76,8 @@ jobs:
 
     - name: Validation Tests
       run: pytest -W ignore -q --datafolder="${{ github.workspace }}/tracm-test-data-0.0.2/"
+
+    - name: Keepalive
+      uses: gautamkrishnar/keepalive-workflow@v2
 
 
