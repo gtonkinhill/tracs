@@ -6,7 +6,24 @@ import subprocess
 import random
 import gzip
 import pyfastx as fx
+import sourmash
+from sourmash.exceptions import SourmashError
 
+def is_valid_sourmash_db(filepath):
+    try:
+        db = sourmash.load_file_as_index(filepath)
+        manifest = db.manifest
+        if manifest is None:
+            return False
+        n = len(db)  # forces manifest/signature enumeration
+        if n == 0:
+            return False
+        return True
+    except Exception:
+        # Catch broadly: zipfile.BadZipFile, json.JSONDecodeError,
+        # KeyError, ValueError, SourmashError, FileNotFoundError, etc.
+        # can all surface once parsing is forced.
+        return False
 
 def run_sketch(input_files, prefix, output, ksize=51, scaled=10000):
     cmd = "sourmash sketch dna"

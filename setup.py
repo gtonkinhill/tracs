@@ -1,10 +1,7 @@
-from setuptools import setup, Extension, find_packages
+from setuptools import setup
 import platform
-from glob import glob
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from ctypes.util import find_library
-from codecs import open
-from os import path
 import os
 import re
 import io
@@ -70,10 +67,9 @@ setup(
     author="Gerry Tonkin-Hill",
     description=
     "A fast python and and c++ pipeline for identifying transmission clusters from single genome and metagenomic data",
-    long_description_content_type="text/markdown",
     url="https://github.com/gtonkinhill/tracs",
     install_requires=[
-        'numpy', 'scipy', 'plotly', 'matplotlib', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'ncbi_genome_download'
+        'numpy<2.0.0', 'scipy', 'plotly', 'matplotlib', 'pyfastx', 'tqdm', 'sourmash', 'joblib', 'ncbi_genome_download', 'pandas'
     ],
     python_requires='>=3.9.0',
     packages=['tracs'],

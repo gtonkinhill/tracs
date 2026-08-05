@@ -14,7 +14,7 @@ import ncbi_genome_download as ngd
 import glob
 import pathlib
 
-from .utils import run_gather, generate_reads
+from .utils import run_gather, generate_reads, is_valid_sourmash_db
 from .pileup import align_and_pileup, align_and_pileup_composite
 from .dirichlet_multinomial import find_dirichlet_priors
 
@@ -302,7 +302,7 @@ def align(args):
             [1, 1, 1, 1],  # ACGT
         ]
     )
-    iupac_codes = np.chararray(b.shape[0])
+    iupac_codes = np.empty(b.shape[0], dtype='S1')
     iupac_codes[np.packbits(b, axis=1, bitorder="little").flatten()] = [
         b"X",
         b"A",
@@ -340,9 +340,11 @@ def align(args):
 
     if not single_ref:
         # retrieve sourmash database from zipfile
-        if ".sbt.zip" in args.database:
+        if is_valid_sourmash_db(args.database):
+            print("HERE!!!")
             smdb = args.database
         else:
+            print("HERE222")
             with ZipFile(args.database, "r") as archive:
                 archive.extract("sourmashDB.sbt.zip", temp_dir)
                 smdb = temp_dir + "sourmashDB.sbt.zip"
@@ -356,7 +358,7 @@ def align(args):
         )
 
         ref_locs = {}
-        if ".sbt.zip" in args.database:
+        if smdb!=temp_dir + "sourmashDB.sbt.zip":
             logging.warning(
                 "No references provided. TRACS will attempt to download references from Genbank"
             )
