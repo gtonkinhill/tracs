@@ -13,7 +13,7 @@ from joblib import Parallel, delayed
 
 
 def combine_parser(parser):
-    parser.description = "Combine runs of TRACS'm align ready for distance estimation"
+    parser.description = "Combine runs of TRACS align ready for distance estimation"
 
     io_opts = parser.add_argument_group("Input/output")
 
@@ -32,7 +32,7 @@ def combine_parser(parser):
         "--output",
         dest="output_dir",
         required=True,
-        help="name of the output driectory to store the combined alignments.",
+        help="name of the output directory to store the combined alignments.",
         type=str,
     )
 

@@ -5,81 +5,83 @@ import logging
 import subprocess
 import random
 import gzip
-import pysylph
+import csv
 import pyfastx as fx
+import sourmash
+from sourmash.exceptions import SourmashError
 
 
 def run_sylph_profile(
     input_files,
     databasefile,
-    output=None,
+    output_dir,
+    prefix="query",
     ksize=31,
     c=200,
-    min_eff_cov=0.1,       # Used as sequence abundance threshold
-    min_ani=0.95       # Added: Sylph excels at ANI-based filtering
+    min_eff_cov=0.1,
+    min_ani=95.0,  # Sylph outputs ANI in percentages (e.g. 99.20)
 ):
-    """
-    Profiles sequencing files against a Sylph database in memory.
-    """
-    # 1. Load database
-    logging.info(f"Loading Sylph database: {databasefile}")
-    database = pysylph.Database.load(databasefile) 
+    """Profile sequencing files against a Sylph database."""
+    if not input_files:
+        raise ValueError("At least one input file is required.")
 
-    # 2. Sketch input files
-    sample = sylph_sketch(input_files, prefix="query", ksize=ksize, c=c)
+    out_csv = os.path.join(output_dir, f"{prefix}_sylph_profile.tsv")
 
-    # 3. Profile with Sylph
-    logging.info("Profiling query against database...")
-    profiler = pysylph.Profiler()
-    results = profiler.profile(sample, database)
+    cmd = ["sylph", "profile", str(databasefile)]
 
-    # Writing a CSV output if specified
-    if output:
-        with open(f"{output}.csv", "w") as out_csv:
-            out_csv.write("reference,ani,sequence_abundance,eff_cov\n")
-            for res in results:
-                # `res` object attributes map to Sylph's output columns
-                out_csv.write(f"{res.genome},{res.ani},{res.seq_abund},{res.eff_cov}\n")
+    if len(input_files) == 2:
+        cmd.extend(["-1", str(input_files[0]), "-2", str(input_files[1])])
+    else:
+        cmd.extend(map(str, input_files))
 
-    # 4. Filter results
+    cmd.extend(["-o", out_csv])
+
+    logging.info("Profiling query against database with sylph...")
+    logging.info("Command: %s", subprocess.list2cmdline(cmd))
+    subprocess.run(cmd, check=True)
+
     references = []
-    
-    for res in results:
-        if res.ani >= min_ani and res.eff_cov >= min_eff_cov:
-            logging.info(
-                f"Using reference: {res.genome} "
-                f"(ANI: {res.ani:.3f}, Abund: {res.seq_abund:.3f}, Eff_Cov: {res.eff_cov:.2f})"
-            )
-            references.append(res.genome)
+    with open(out_csv, newline="") as infile:
+        for row in csv.DictReader(infile, delimiter="\t"):
+            genome = row.get("Genome_file")
+            try:
+                # Based on the head output, Sylph outputs "Adjusted_ANI", "Sequence_abundance", formatting.
+                ani = float(row.get("Adjusted_ANI") or 0)
+                eff_cov = float(row.get("Eff_cov") or 0)
+                seq_abund = float(row.get("Sequence_abundance") or 0)
+            except (TypeError, ValueError):
+                continue
 
-    return references
+            if genome and ani >= min_ani and eff_cov >= min_eff_cov:
+                # Map path back to genome accession or name.
+                # Remove common assembly suffixes to retrieve the clean accession base (e.g. GCF_000742135.1)
+                genome_basename = os.path.basename(genome)
+                for suffix in [".fasta.gz", ".fna.gz", ".fasta", ".fna", "_genomic"]:
+                    genome_basename = genome_basename.replace(suffix, "")
+                
+                logging.info(
+                    "Using reference: %s (ANI: %.2f, Abund: %.3f, Eff_Cov: %.2f)",
+                    genome_basename, ani, seq_abund, eff_cov,
+                )
+                references.append(genome_basename)
 
+    return list(dict.fromkeys(references))
 
-def sylph_sketch(input_files, prefix, ksize=31, c=200):
-    """
-    Sketches and merges multiple sequencing files into a single sylph sample.
-    
-    Parameters:
-        input_files (list): List of file paths (FASTQ or FASTA)
-        prefix (str): The name for the merged sample
-        ksize (int): K-mer size (sylph default is 31)
-        c (int): Min-spacing compression parameter (sylph default is 200)
-    """
-    logging.info(f"Sketching {len(input_files)} files into merged sample '{prefix}'...")
-    
-    # 1. Initialize the sketcher with Sylph-specific parameters
-    sketcher = pysylph.Sketcher(k=ksize, c=c)
-
-    # 2. Create a chained generator to stream all files without loading into memory
-    def stream_all_reads():
-        for file in input_files:
-            for record in fx.Fastx(file):
-                yield record[1]
-
-    # 3. Sketch with sylph using the streamed reads
-    sample = sketcher.sketch_single(name=prefix, reads=stream_all_reads())
-
-    return sample
+def is_valid_sourmash_db(filepath):
+    try:
+        db = sourmash.load_file_as_index(filepath)
+        manifest = db.manifest
+        if manifest is None:
+            return False
+        n = len(db)  # forces manifest/signature enumeration
+        if n == 0:
+            return False
+        return True
+    except Exception:
+        # Catch broadly: zipfile.BadZipFile, json.JSONDecodeError,
+        # KeyError, ValueError, SourmashError, FileNotFoundError, etc.
+        # can all surface once parsing is forced.
+        return False
 
 def run_sketch(input_files, prefix, output, ksize=51, scaled=10000):
     cmd = "sourmash sketch dna"
@@ -127,6 +129,15 @@ def run_gather(
     logging.info(f"finding references...")
     logging.info(f"command: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
+
+    # sourmash does not write an output file if it finds no matches
+    if not os.path.isfile(output + ".csv"):
+        logging.error(
+            f"No reference genomes were found within {threshold_bp}bp of the query. "
+            "Consider using a larger database or providing a reference with --refseqs. "
+            "See the sourmash log for more details."
+        )
+        sys.exit(1)
 
     # Process results
     references = []

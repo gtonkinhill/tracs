@@ -1,4 +1,4 @@
-# Finds the paramters of the dirichlet multinomial distribution
+# Finds the parameters of the dirichlet multinomial distribution
 # by maximising the leave-one-out (LOO) likelihood or fixed point iteration as described in
 # Minka, 2000. https://tminka.github.io/papers/dirichlet/minka-dirichlet.pdf
 

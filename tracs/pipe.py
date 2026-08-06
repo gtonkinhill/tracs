@@ -47,6 +47,14 @@ def pipe_parser(parser):
         default=None,
     )
 
+    io_opts.add_argument(
+            "--screen_method",
+            dest="screen_method",
+            help="method to use for screening reference genomes",
+            choices=["sourmash", "sylph"],
+            type=str,
+            default="sourmash",
+    )
 
     io_opts.add_argument(
         "-o",

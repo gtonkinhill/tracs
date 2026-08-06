@@ -2,12 +2,12 @@
 
 #include <chrono>
 #include <iostream>
+#include <mutex>
 #include <stdio.h>
 #include <string>
 #include <zlib.h>
 #include <map>
 #include <cstdlib> 
-#include <signal.h>
 
 #include "kseq.h"
 
@@ -15,14 +15,6 @@
 #include <boost/math/distributions/binomial.hpp>
 
 using namespace std;
-
-volatile bool stop_requested = false;  // shared flag
-
-void handle_signal(int signal) {
-    if (signal == SIGINT) {
-        stop_requested = true;  // set the flag if Ctrl+C is pressed
-    }
-}
 
 template <typename T>
 std::vector<T> combine_vectors(const std::vector<std::vector<T>> &vec,
@@ -41,6 +33,8 @@ std::vector<T> combine_vectors(const std::vector<std::vector<T>> &vec,
 double cached_binomial_cdf(int n, double p, int k)
 {
     static std::map<std::tuple<int, double, int>, double> cache;
+    static std::mutex cache_mutex;
+    std::lock_guard<std::mutex> lock(cache_mutex);
 
     auto key = std::make_tuple(n, p, k);
 
@@ -204,13 +198,8 @@ std::pair<size_t, size_t> load_seqs(std::string fasta,
 
     count++;
 
-    try {
-        if (PyErr_CheckSignals() != 0) {
-            throw std::runtime_error("Keyboard interrupt");
-        }
-    } catch (const std::runtime_error&) {
-        std::cerr << "Interrupted by user!" << std::endl;
-        exit(1);
+    if (PyErr_CheckSignals() != 0) {
+      throw pybind11::error_already_set();
     }
   }
   kseq_destroy(seq);
@@ -295,7 +284,6 @@ size_t filter_recomb(boost::dynamic_bitset<> res) {
 
       // try {
       if (window_count.first < window_count.second) {
-          stop_requested = true;
           throw std::out_of_range("Invalid input to binomial CDF!");
       }
 
@@ -322,9 +310,6 @@ inline std::tuple<std::vector<uint64_t>, std::vector<uint64_t>,
                   std::vector<uint64_t>, std::vector<uint64_t>>
 pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool filter)
 {
-  // handle a stop signal 
-  signal(SIGINT, handle_signal);  
-
   // open filename and initialise kseq
   uint64_t n_seqs = 0;
   uint64_t seq_length;
@@ -375,69 +360,50 @@ pairsnp(const std::vector<std::string> fastas, int n_threads, int dist, bool fil
   std::vector<std::vector<uint64_t>> n_compared_sites(n_seqs);
   std::vector<std::vector<uint64_t>> filt_distances(n_seqs);
   uint64_t len = 0;
-  bool interrupt = false;
 
 #pragma omp parallel for schedule(static) reduction(+ \
                                                     : len) num_threads(n_threads)
   for (uint64_t i = 0; i < i_end; i++)
   {
-    // Cannot throw in an openmp block, short circuit instead
-    if (stop_requested || PyErr_CheckSignals() != 0)
-    {
-      stop_requested = true;
-    }
-    else
-    {
-      int d;
-      int nn;
-      boost::dynamic_bitset<> res(seq_length);
+    int d;
+    int nn;
+    boost::dynamic_bitset<> res(seq_length);
 
-      for (uint64_t j = std::max(j_start, i + 1); j < n_seqs; j++)
+    for (uint64_t j = std::max(j_start, i + 1); j < n_seqs; j++)
+    {
+
+      res = A_snps[i] & A_snps[j];
+      res |= C_snps[i] & C_snps[j];
+      res |= G_snps[i] & G_snps[j];
+      res |= T_snps[i] & T_snps[j];
+
+      d = seq_length - res.count();
+
+      if (d <= dist)
       {
+        rows[i].push_back(i);
+        cols[i].push_back(j);
+        distances[i].push_back(d);
 
-        res = A_snps[i] & A_snps[j];
-        res |= C_snps[i] & C_snps[j];
-        res |= G_snps[i] & G_snps[j];
-        res |= T_snps[i] & T_snps[j];
-
-        d = seq_length - res.count();
-
-        if (d <= dist)
-        {
-          rows[i].push_back(i);
-          cols[i].push_back(j);
-          distances[i].push_back(d);
-
-          if (filter){
-            uint64_t fd = filter_recomb(res);
-            filt_distances[i].push_back(fd);
-          }
-
-          // Count the number of compared sites (not N's)
-          res = A_snps[i] & C_snps[i] & G_snps[i] & T_snps[i];
-          res |= A_snps[j] & C_snps[j] & G_snps[j] & T_snps[j];
-          nn = seq_length - res.count();
-          n_compared_sites[i].push_back(nn);
+        if (filter){
+          uint64_t fd = filter_recomb(res);
+          filt_distances[i].push_back(fd);
         }
-        
+
+        // Count the number of compared sites (not N's)
+        res = A_snps[i] & C_snps[i] & G_snps[i] & T_snps[i];
+        res |= A_snps[j] & C_snps[j] & G_snps[j] & T_snps[j];
+        nn = seq_length - res.count();
+        n_compared_sites[i].push_back(nn);
       }
 
-      len += distances[i].size();
-
-      //       if (i % update_every == 0) {
-      // #pragma omp critical
-      //         dist_progress.tick_count(++progress);
-      //       }
     }
+
+    len += distances[i].size();
   }
 
-  try {
-      if (stop_requested) {
-          throw std::runtime_error("Keyboard interrupt");
-      }
-  } catch (const std::runtime_error&) {
-      std::cerr << "Interrupted by user!" << std::endl;
-      exit(1);
+  if (PyErr_CheckSignals() != 0) {
+    throw pybind11::error_already_set();
   }
 
   // // Finalise
