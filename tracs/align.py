@@ -1,3 +1,5 @@
+from TRACS import calculate_posteriors
+
 import os
 import sys
 import argparse
@@ -17,8 +19,6 @@ import pathlib
 from .utils import run_gather, generate_reads, is_valid_sourmash_db
 from .pileup import align_and_pileup, align_and_pileup_composite
 from .dirichlet_multinomial import find_dirichlet_priors
-
-from TRACS import calculate_posteriors
 
 from collections import Counter
 
