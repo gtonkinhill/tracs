@@ -40,8 +40,16 @@ else:
                      "(or not set); use eg. 'export ompy_OpenMP=False'"
                      f"Now it is: {openmp}")
 
-march = os.getenv("TRACS_MARCH", "x86-64-v2")
-extra_compile_args = ["-O3", "-ffast-math", f"-march={march}"]
+machine = platform.machine().lower()
+if machine in ["x86_64", "amd64"]:
+    default_march = "x86-64-v2"
+else:
+    default_march = None
+
+march = os.getenv("TRACS_MARCH", default_march)
+extra_compile_args = ["-O3", "-ffast-math"]
+if march:
+    extra_compile_args.append(f"-march={march}")
 extra_link_args = ["-lz"]
 if openmp and platform.system() == 'Darwin':
     extra_compile_args.insert(-1, "-Xpreprocessor")
