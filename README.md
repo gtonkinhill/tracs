@@ -36,7 +36,7 @@ TRACS is a python package and can be installed easily using pip.
 pip3 install git+https://github.com/gtonkinhill/tracs
 ```
 
-By default, building from source targets a baseline architectural compatibility (`x86-64-v2`) for portability. If you want to optimise the build for your current CPU to obtain maximum performance, you can set the `TRACS_MARCH` environment variable before installing:
+By default, building from source uses your compiler's default baseline architecture for maximum portability. If you want to optimise the build for your current CPU to obtain maximum performance, you can set the `TRACS_MARCH` environment variable before installing:
 
 ```
 TRACS_MARCH=native pip3 install git+https://github.com/gtonkinhill/tracs
