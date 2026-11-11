@@ -11,61 +11,79 @@ import sourmash
 from sourmash.exceptions import SourmashError
 
 
+# extensions stripped from sylph's Genome_file so names match build_db.genome_prefix
+GENOME_EXTENSIONS = (".fasta.gz", ".fna.gz", ".fa.gz", ".fasta", ".fna", ".fa")
+
+
+def strip_genome_extension(path):
+    name = os.path.basename(path)
+    for ext in GENOME_EXTENSIONS:
+        if name.endswith(ext):
+            return name[: -len(ext)]
+    return name
+
+
 def run_sylph_profile(
     input_files,
     databasefile,
     output_dir,
     prefix="query",
-    ksize=31,
-    c=200,
     min_eff_cov=0.1,
-    min_ani=95.0,  # Sylph outputs ANI in percentages (e.g. 99.20)
+    min_ani=95.0,  # sylph reports ANI as a percentage (e.g. 99.20)
+    n_cpu=1,
 ):
-    """Profile sequencing files against a Sylph database."""
+    """Profile sequencing files against a sylph database.
+
+    Returns the reference names (genome file name without extension) that pass
+    the ANI and effective coverage thresholds; an empty list if none do.
+    """
     if not input_files:
         raise ValueError("At least one input file is required.")
 
-    out_csv = os.path.join(output_dir, f"{prefix}_sylph_profile.tsv")
+    out_tsv = os.path.join(output_dir, f"{prefix}_sylph_profile.tsv")
 
-    cmd = ["sylph", "profile", str(databasefile)]
+    cmd = ["sylph", "profile", str(databasefile), "-t", str(n_cpu)]
 
     if len(input_files) == 2:
         cmd.extend(["-1", str(input_files[0]), "-2", str(input_files[1])])
     else:
         cmd.extend(map(str, input_files))
 
-    cmd.extend(["-o", out_csv])
+    cmd.extend(["-o", out_tsv])
 
     logging.info("Profiling query against database with sylph...")
     logging.info("Command: %s", subprocess.list2cmdline(cmd))
     subprocess.run(cmd, check=True)
 
     references = []
-    with open(out_csv, newline="") as infile:
+    with open(out_tsv, newline="") as infile:
         for row in csv.DictReader(infile, delimiter="\t"):
             genome = row.get("Genome_file")
             try:
-                # Based on the head output, Sylph outputs "Adjusted_ANI", "Sequence_abundance", formatting.
                 ani = float(row.get("Adjusted_ANI") or 0)
                 eff_cov = float(row.get("Eff_cov") or 0)
                 seq_abund = float(row.get("Sequence_abundance") or 0)
             except (TypeError, ValueError):
                 continue
 
-            if genome and ani >= min_ani and eff_cov >= min_eff_cov:
-                # Map path back to genome accession or name.
-                # Remove common assembly suffixes to retrieve the clean accession base (e.g. GCF_000742135.1)
-                genome_basename = os.path.basename(genome)
-                for suffix in [".fasta.gz", ".fna.gz", ".fasta", ".fna", "_genomic"]:
-                    genome_basename = genome_basename.replace(suffix, "")
-                
+            if not genome:
+                continue
+
+            name = strip_genome_extension(genome)
+            if ani >= min_ani and eff_cov >= min_eff_cov:
                 logging.info(
                     "Using reference: %s (ANI: %.2f, Abund: %.3f, Eff_Cov: %.2f)",
-                    genome_basename, ani, seq_abund, eff_cov,
+                    name, ani, seq_abund, eff_cov,
                 )
-                references.append(genome_basename)
+                references.append(name)
+            else:
+                logging.info(
+                    "Skipping sylph hit below thresholds: %s (ANI: %.2f, Eff_Cov: %.2f)",
+                    name, ani, eff_cov,
+                )
 
     return list(dict.fromkeys(references))
+
 
 def is_valid_sourmash_db(filepath):
     try:
@@ -130,14 +148,13 @@ def run_gather(
     logging.info(f"command: {cmd}")
     subprocess.run(cmd, shell=True, check=True)
 
-    # sourmash does not write an output file if it finds no matches
+    # sourmash does not write an output file if it finds no matches;
+    # the caller warns and skips the sample
     if not os.path.isfile(output + ".csv"):
-        logging.error(
-            f"No reference genomes were found within {threshold_bp}bp of the query. "
-            "Consider using a larger database or providing a reference with --refseqs. "
-            "See the sourmash log for more details."
+        logging.info(
+            f"sourmash found no reference genomes sharing >= {threshold_bp}bp with the query."
         )
-        sys.exit(1)
+        return []
 
     # Process results
     references = []
@@ -150,6 +167,9 @@ def run_gather(
             line[2] = float(line[2])
             line[0] = float(line[0])
             potential.append(line)
+
+    if not potential:
+        return []
 
     potential = sorted(potential, reverse=True)
 

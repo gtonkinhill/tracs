@@ -57,6 +57,11 @@ jobs:
         make
         sudo make install
 
+    - name: Install Sylph
+      run: |
+        cargo install sylph --locked
+        sylph --version
+
     - name: Install Htsbox
       run: |
         git clone https://github.com/lh3/htsbox

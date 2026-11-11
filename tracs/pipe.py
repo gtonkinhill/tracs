@@ -57,6 +57,22 @@ def pipe_parser(parser):
     )
 
     io_opts.add_argument(
+        "--sylph_min_ani",
+        dest="sylph_min_ani",
+        help="minimum sylph adjusted ANI (%%) for a reference to be used; lower this for low coverage samples (default=95)",
+        type=float,
+        default=95.0,
+    )
+
+    io_opts.add_argument(
+        "--sylph_min_eff_cov",
+        dest="sylph_min_eff_cov",
+        help="minimum sylph effective coverage for a reference to be used (default=0.1)",
+        type=float,
+        default=0.1,
+    )
+
+    io_opts.add_argument(
         "-o",
         "--output",
         dest="output_dir",
