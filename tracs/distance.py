@@ -1,3 +1,5 @@
+from TRACS import pairsnp
+
 import os
 import sys
 import argparse
@@ -5,7 +7,6 @@ import logging
 from datetime import date
 import numpy as np
 
-from TRACS import pairsnp
 from .transcluster import calculate_trans_prob
 from .utils import check_positive_int, check_positive_float
 

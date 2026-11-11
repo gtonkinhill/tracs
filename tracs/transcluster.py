@@ -1,5 +1,6 @@
-import numpy as np
 from TRACS import trans_dist
+
+import numpy as np
 from datetime import date
 
 SECONDS_IN_YEAR = 31556952.0
