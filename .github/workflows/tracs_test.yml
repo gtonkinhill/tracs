@@ -59,7 +59,7 @@ jobs:
 
     - name: Install Sylph
       run: |
-        cargo install sylph --locked
+        cargo install --git https://github.com/bluenote-1577/sylph --locked
         sylph --version
 
     - name: Install Htsbox
@@ -75,9 +75,8 @@ jobs:
         unzip v0.0.2.zip
         
     - name: Install
-      run: python setup.py install
+      run: python -m pip install .
 
     - name: Validation Tests
       run: pytest -W ignore -q --datafolder="${{ github.workspace }}/tracm-test-data-0.0.2/"
-
 
