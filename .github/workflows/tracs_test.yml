@@ -59,6 +59,11 @@ jobs:
         make
         sudo make install
 
+    - name: Install Sylph
+      run: |
+        cargo install --git https://github.com/bluenote-1577/sylph --locked
+        sylph --version
+
     - name: Install Htsbox
       run: |
         git clone https://github.com/lh3/htsbox
@@ -76,5 +81,4 @@ jobs:
 
     - name: Validation Tests
       run: pytest -W ignore -q --datafolder="${{ github.workspace }}/tracm-test-data-0.0.2/"
-
 
