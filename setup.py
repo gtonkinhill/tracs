@@ -72,7 +72,7 @@ setup(
     "A fast python and and c++ pipeline for identifying transmission clusters from single genome and metagenomic data",
     url="https://github.com/gtonkinhill/tracs",
     install_requires=[
-        'numpy', 'scipy', 'plotly', 'matplotlib', 'pyfastx', 'tqdm', 'sourmash', 'joblib', 'ncbi_genome_download', 'pandas'
+        'numpy', 'scipy', 'plotly', 'matplotlib', 'pyfastx', 'datetime', 'tqdm', 'sourmash', 'joblib', 'ncbi_genome_download'
     ],
     python_requires='>=3.9.0',
     packages=['tracs'],

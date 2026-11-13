@@ -62,6 +62,23 @@ def build_db_parser(parser):
     )
 
     parser.add_argument(
+        "--screen_method",
+        dest="screen_method",
+        help="screening database to include in the bundle (default=sourmash)",
+        choices=["sourmash", "sylph"],
+        default="sourmash",
+        type=str,
+    )
+
+    parser.add_argument(
+        "--sylph_c",
+        dest="sylph_c",
+        help="sylph subsampling rate; larger values give a smaller database (default=200)",
+        default=200,
+        type=int,
+    )
+
+    parser.add_argument(
         "-t",
         "--threads",
         dest="n_cpu",
@@ -107,6 +124,27 @@ def build_sourmash_db(inputs, outputdir, ksize=51, scale=1000, n_cpu=1):
     return outputdir + "sourmashDB.sbt.zip"
 
 
+def build_sylph_db(genome_files, outputdir, c=200, n_cpu=1):
+    # genome files must already be named <prefix>.fasta.gz so that the
+    # Genome_file reported by `sylph profile` maps back to the bundled fasta
+    out_prefix = os.path.join(outputdir, "sylphDB")
+    cmd = ["sylph", "sketch", "-c", str(c), "-t", str(n_cpu), "-o", out_prefix, "-g"]
+    cmd += list(genome_files)
+
+    logging.info(f"running cmd: {subprocess.list2cmdline(cmd)}")
+    subprocess.run(cmd, check=True)
+
+    return out_prefix + ".syldb"
+
+
+def genome_prefix(f):
+    # strip .gz before the fasta extension so X.fasta.gz -> X
+    name = os.path.basename(f)
+    if name.endswith(".gz"):
+        name = name[:-3]
+    return os.path.splitext(name)[0]
+
+
 def build_db(args):
     # set logging up
     logging.basicConfig(
@@ -127,38 +165,48 @@ def build_db(args):
                 line = line.strip().split(",")
                 inputs.append((line[1], line[0]))
     else:
-        inputs = [
-            (f, os.path.splitext(os.path.basename(f))[0]) for f in args.input_files
-        ]
+        inputs = [(f, genome_prefix(f)) for f in args.input_files]
 
     # find core if necessary
     # filtinputs = find_core(inputs, temp_dir, args.core_thresh, args.n_cpu)
     filtinputs = inputs
 
+    # stage genomes as <prefix>.fasta.gz, gzipping if necessary
+    genome_dir = os.path.join(temp_dir, "genomes", "")
+    os.mkdir(genome_dir)
+    staged = []
+    for f, prefix in filtinputs:
+        newloc = genome_dir + prefix + ".fasta.gz"
+        if f.split(".")[-1] == "gz":
+            shutil.copyfile(f, newloc)
+        else:
+            with open(f, "rb") as f_in:
+                with gzip.open(newloc, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        staged.append((newloc, prefix))
+
     # build zip file to hold database
     with ZipFile(args.dbname + ".zip", "w") as archive:
-        # generate sourmash database
-        path_to_sourmashdb = build_sourmash_db(
-            inputs, temp_dir, ksize=args.ksize, scale=args.scale, n_cpu=1
-        )
-        archive.write(path_to_sourmashdb, "sourmashDB.sbt.zip")
+        if args.screen_method == "sourmash":
+            path_to_sourmashdb = build_sourmash_db(
+                inputs, temp_dir, ksize=args.ksize, scale=args.scale, n_cpu=1
+            )
+            archive.write(path_to_sourmashdb, "sourmashDB.sbt.zip")
 
-        # copy genomes into subdirectory and gzip if necessary
-        for f, prefix in filtinputs:
-            if f.split(".")[-1] == "gz":
-                archive.write(f, prefix + ".fasta.gz")
-            else:
-                newloc = temp_dir + prefix + ".fasta.gz"
-                with open(f, "rb") as f_in:
-                    with gzip.open(newloc, "wb") as f_out:
-                        shutil.copyfileobj(f_in, f_out)
-                archive.write(newloc, prefix + ".fasta.gz")
-                os.remove(newloc)
+        elif args.screen_method == "sylph":
+            path_to_sylphdb = build_sylph_db(
+                [f for f, _ in staged], temp_dir, c=args.sylph_c, n_cpu=args.n_cpu
+            )
+            archive.write(path_to_sylphdb, "sylphDB.syldb")
+
+        # add genomes to the bundle
+        for f, prefix in staged:
+            archive.write(f, prefix + ".fasta.gz")
 
         # add summary file for navigation
         with open(temp_dir + "summary.tsv", "w") as outfile:
             for f, prefix in inputs:
-                outfile.write(prefix + "," + prefix + ".fasta.gz")
+                outfile.write(prefix + "," + prefix + ".fasta.gz\n")
         archive.write(temp_dir + "summary.tsv", "summary.tsv")
 
     # clean up

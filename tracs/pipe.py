@@ -47,6 +47,30 @@ def pipe_parser(parser):
         default=None,
     )
 
+    io_opts.add_argument(
+            "--screen_method",
+            dest="screen_method",
+            help="method to use for screening reference genomes",
+            choices=["sourmash", "sylph"],
+            type=str,
+            default="sourmash",
+    )
+
+    io_opts.add_argument(
+        "--sylph_min_ani",
+        dest="sylph_min_ani",
+        help="minimum sylph adjusted ANI (%%) for a reference to be used; lower this for low coverage samples (default=95)",
+        type=float,
+        default=95.0,
+    )
+
+    io_opts.add_argument(
+        "--sylph_min_eff_cov",
+        dest="sylph_min_eff_cov",
+        help="minimum sylph effective coverage for a reference to be used (default=0.1)",
+        type=float,
+        default=0.1,
+    )
 
     io_opts.add_argument(
         "-o",

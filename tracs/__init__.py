@@ -3,4 +3,5 @@
 # Do this FIRST so libgomp gets its required static TLS memory
 import TRACS
 
-__version__ = '1.1.4'
+__version__ = '1.2.0'
+

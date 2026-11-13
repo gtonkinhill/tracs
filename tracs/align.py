@@ -16,7 +16,7 @@ import ncbi_genome_download as ngd
 import glob
 import pathlib
 
-from .utils import run_gather, generate_reads, is_valid_sourmash_db
+from .utils import run_gather, is_valid_sourmash_db, generate_reads, run_sylph_profile
 from .pileup import align_and_pileup, align_and_pileup_composite
 from .dirichlet_multinomial import find_dirichlet_priors
 
@@ -55,6 +55,31 @@ def align_parser(parser):
         help="path to reference fasta files",
         type=os.path.abspath,
         default=None,
+    )
+
+    io_opts.add_argument(
+        "--screen_method",
+        dest="screen_method",
+        help="method to use for screening reference genomes",
+        choices=["sourmash", "sylph"],
+        type=str,
+        default="sourmash",
+    )
+
+    io_opts.add_argument(
+        "--sylph_min_ani",
+        dest="sylph_min_ani",
+        help="minimum sylph adjusted ANI (%%) for a reference to be used; lower this for low coverage samples (default=95)",
+        type=float,
+        default=95.0,
+    )
+
+    io_opts.add_argument(
+        "--sylph_min_eff_cov",
+        dest="sylph_min_eff_cov",
+        help="minimum sylph effective coverage for a reference to be used (default=0.1)",
+        type=float,
+        default=0.1,
     )
 
     io_opts.add_argument(
@@ -266,8 +291,13 @@ def align(args):
         sys.exit(1)
 
     if args.database is not None:
-        if ".zip" not in args.database:
-            logging.error("Database must be a zip file!")
+        if ".zip" not in args.database and ".syldb" not in args.database:
+            logging.error("Database must be a zip file or a Sylph database!")
+            sys.exit(1)
+        if args.database.endswith(".syldb") and args.screen_method != "sylph":
+            logging.error(
+                "A sylph database (.syldb) requires --screen_method sylph!"
+            )
             sys.exit(1)
 
     single_ref = False
@@ -358,24 +388,68 @@ def align(args):
         args.prefix = os.path.splitext(os.path.basename(args.input_files[0]))[0]
 
     if not single_ref:
-        # retrieve sourmash database from zipfile
-        if is_valid_sourmash_db(args.database):
-            smdb = args.database
-        else:
-            with ZipFile(args.database, "r") as archive:
-                archive.extract("sourmashDB.sbt.zip", temp_dir)
-                smdb = temp_dir + "sourmashDB.sbt.zip"
+        # retrieve sourmash or sylph database from zipfile
+        if args.screen_method == "sourmash":
+            # retrieve sourmash database from zipfile
+            if is_valid_sourmash_db(args.database):
+                smdb = args.database
+            else:
+                with ZipFile(args.database, "r") as archive:
+                    archive.extract("sourmashDB.sbt.zip", temp_dir)
+                    smdb = temp_dir + "sourmashDB.sbt.zip"
 
-        # run soursmash 'gather' method
-        references = run_gather(
-            input_files=args.input_files,
-            databasefile=smdb,
-            output=args.output_dir + args.prefix + "_sourmash_hits",
-            temp_dir=temp_dir,
-        )
+            # run soursmash 'gather' method
+            references = run_gather(
+                input_files=args.input_files,
+                databasefile=smdb,
+                output=args.output_dir + args.prefix + "_sourmash_hits",
+                temp_dir=temp_dir,
+            )
+
+        elif args.screen_method == "sylph":
+            if ".syldb" in args.database:
+                smdb = args.database
+            else:
+                with ZipFile(args.database, "r") as archive:
+                    archive.extract("sylphDB.syldb", temp_dir)
+                    smdb = temp_dir + "sylphDB.syldb"
+
+            # run sylph profile method
+            references = run_sylph_profile(
+                input_files=args.input_files,
+                databasefile=smdb,
+                output_dir=args.output_dir,
+                prefix=args.prefix,
+                min_eff_cov=args.sylph_min_eff_cov,
+                min_ani=args.sylph_min_ani,
+                n_cpu=args.n_cpu,
+            )
+        else:
+            logging.error("Screening method must be either 'sourmash' or 'sylph'!")
+            sys.exit(1)
+
+        if not references:
+            hint = (
+                "lowering --sylph_min_ani / --sylph_min_eff_cov, "
+                if args.screen_method == "sylph"
+                else ""
+            )
+            logging.warning(
+                f"No reference genomes in the database matched sample '{args.prefix}' "
+                f"using {args.screen_method}. Skipping alignment for this sample. "
+                f"Consider {hint}using a larger database or providing a reference with --refseqs."
+            )
+            shutil.rmtree(temp_dir)
+            return
+
+        # use reference genomes bundled in the database zip when available
+        bundled = set()
+        if args.database.endswith(".zip"):
+            with ZipFile(args.database, "r") as archive:
+                bundled = set(archive.namelist())
 
         ref_locs = {}
-        if smdb!=temp_dir + "sourmashDB.sbt.zip":
+        if not all(ref + ".fasta.gz" in bundled for ref in references):
             logging.warning(
                 "No references provided. TRACS will attempt to download references from Genbank"
             )
